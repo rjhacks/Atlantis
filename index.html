@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Atlantis</title>
+	<style type="text/css" title="currentStyle" media="screen">
+		#container {
+			margin:0px auto;
+			padding:10px;
+			text-align:center;
+
+			width:1100px;
+			background-color:#FFFFFF;
+		}
+				
+		.bordered {
+			margin:0px auto;
+			width:1024px;
+			margin-bottom:10px;
+			border:1px solid black;
+		}
+		
+		.margined {
+			margin:5px;
+		}
+		
+		.lightback {
+			background-color:#DDDDFF;
+		}
+		
+		#topbox {
+			height:60px;
+		}
+		
+		#main {
+			visibility:hidden;
+			position:relative;
+			top:-788px;
+		}
+		
+		#mailbox {
+			visibility:hidden;
+			position:relative;
+			top:-40px;
+		}
+		
+		#notes {
+			position:relative;
+			top:-43px;
+		}
+		
+		#debug {
+			position:relative;
+			top:0px;
+			visibility:hidden;
+		}
+		
+	</style>
+	
+	<script language="JavaScript" type="text/javascript" src="globals.js"></script>
+	<script language="JavaScript" type="text/javascript" src="game_all.js"></script>
+	<script language="JavaScript" type="text/javascript" src="game_setup_board.js"></script>
+	<script language="JavaScript" type="text/javascript" src="game_setup_players.js"></script>
+	<script language="JavaScript" type="text/javascript" src="game_play.js"></script>
+	<script language="JavaScript" type="text/javascript" src="tools.js"></script>
+</head>
+
+
+<body onload="loadgame();">
+	<embed src="glass.wav" autostart=false width=1 height=1 id="glass" enablejavascript=true mayscript=true>
+	<div id="container">
+		<div class="bordered lightback" id="topbox"></div>
+		<canvas id="atlantis" width="1024" height="768" class="bordered lightback">
+			Your browser doesn't support the <i>canvas</i> tag. Get a proper browser.
+		</canvas>
+		<div id="main" width="1024" height="768" class="bordered lightback">&nbsp</div>
+		<div id="mailbox" width="1024" height="50" class="bordered lightback">
+			<input type="checkbox" id="mailcb"> Send me an e-mail when it's my turn, at this address:
+			<input type="text" id="mailaddr">
+			<input type="button" value="Set" id="mailbutton" onclick="register_notify()">
+		</div>
+		<div id="notes" width="1024" height="50" class="bordered lightback">
+			<b>Some notes on <i>Atlantis</i></b>
+			<li>You can create a new game by going to the base-URL of the game.
+			<li>The game does not detect the end of a game (yet). Please gloat manually.
+			<li>I can name at least fifty ways of hacking this game; computation is client-side and the server is dumb. Play fair.
+		</div>
+		<div class="bordered" id="debug">
+			Debug output:
+		</div>
+	</div>
+</body>
+</html>
