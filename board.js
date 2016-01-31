@@ -197,6 +197,11 @@ function drawPoint(point) {
 	ctx.restore();
 }
 
+function error(str) {
+  console.log(str);
+  alert(str);
+}
+
 function loadboard() {
 	atlantis = document.getElementById('atlantis');
   if (hasSupport(atlantis)) {
@@ -206,10 +211,20 @@ function loadboard() {
 
     // Validate that the serialized_board is in fact a valid board according
     // to our schema.
-    var schema = JSON.parse(serialized_schema);
-    var data = JSON.parse(serialized_board);
-    if (!tv4.validate(data, schema, false, true)) {
-      console.log("Invalid board JSON: " + tv4.error);
+    try {
+      var schema = JSON.parse(serialized_schema);
+    } catch (err) {
+      error("Could not parse schema JSON: " + err);
+      return;
+    }
+    try {
+      var data = JSON.parse(serialized_board);
+    } catch (err) {
+      error("Could not parse board JSON: " + err);
+      return;
+    }
+    if (!tv4.validate(data, schema, false /* recursive */, true /* reject unknown fields */)) {
+      error("Invalid board JSON: " + tv4.error);
       return;
     }
     
