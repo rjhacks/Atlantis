@@ -1,0 +1,91 @@
+// Actually this is a JavaScript file rather than a JSON file,
+// but all it does is load some JSON into a variable for us.
+var serialized_board = `
+{
+  "rules_version": "classic",
+  "board": {
+    "players": [
+      {
+        "id": 0,
+        "name": "RJ"
+      },
+      {
+        "id": 1,
+        "name": "Benjamin"
+      }
+    ],
+    "turn_number": 9,
+    "segments": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": -2
+      },
+      {
+        "x": 3,
+        "y": 1
+      },
+      {
+        "x": 4,
+        "y": -1
+      }
+    ],
+    "towers": [
+      {
+        "position": {
+          "x": -1,
+          "y": 0
+        },
+        "player": 0,
+        "is_growing_point": true,
+        "height": 2
+      },
+      {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "player": 0,
+        "height": 1
+      },
+      {
+        "position": {
+          "x": 5,
+          "y": -1
+        },
+        "player": 1,
+        "is_growing_point": true,
+        "height": 2
+      },
+      {
+        "position": {
+          "x": 4,
+          "y": -1
+        },
+        "player": 1,
+        "height": 1
+      }
+    ],
+    "dead_points": [
+      {
+        "position": {
+          "x": 0,
+          "y": 1
+        },
+        "turn_of_death": 7
+      },
+      {
+        "position": {
+          "x": 4,
+          "y": -2
+        },
+        "turn_of_death": 8
+      }
+    ]
+  }
+}
+`;
+
