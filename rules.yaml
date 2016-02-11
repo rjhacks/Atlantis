@@ -1,0 +1,81 @@
+functions:
+- allowCreate(): next.exists() && !prev.exists()
+- allowUpdate(): next.exists()
+- allowIncrement(): next.exists() && next.val() == prev.val() + 1
+- ifGameExists(): root.games.$game_id.exists()
+- ifBoardExists(): (root.boards.$game_id.board_history[next.val() + ''].exists())
+- ifIsNextBoard(): (root.games.$game_id.moves.val() + 1) + '' == $board_num
+
+schema:
+  definitions:
+    board:
+      type: object
+      properties:
+        segments:
+          # TODO(rjh): specify what a segment is in more detail.
+          type: object
+        towers:
+          # TODO(rjh): specify what a tower is in more detail.
+          type: object
+        dead_points:
+          # TODO(rjh): specify what a dead point is in more detail.
+          type: object
+      required: [segments]
+      additionalProperties: false
+    player:
+      type: object
+      properties:
+        name:
+          type: string
+      required: [name]
+      additionalProperties: false
+
+  type: object
+  properties:
+    games:
+      type: object
+      $game_id:
+        type: object
+        properties:
+          moves:
+            type: number
+          rules_version:
+            type: string
+          players:
+            type: object
+            ~$player_id: {$ref: "#/definitions/player"}
+        required: [moves]
+        additionalProperties: false
+    boards:  # Stored outside 'games' so we can get all game info without getting all the boards.
+      type: object
+      $game_id:
+        type: object
+        properties:
+          board_history:
+            # TODO(rjh): move board_history to its own hierarchy, to make get-all-of-a-game affordable.
+            type: object
+            ~$board_num: {$ref: "#/definitions/board"}
+        additionalProperties: false
+  additionalProperties: false
+
+access:
+- location: "/"
+  read: false
+  write: false
+
+- location: "/games/$game_id/"
+  read: ifGameExists()  # Players can only access games whose game ID they know.
+  write: allowCreate()  # Only create is allowed, so a game, once created, stays created.
+
+- location: "/games/$game_id/moves"
+  # We can only increment "moves" if the matching board is already added to the history.
+  write: allowIncrement() && ifBoardExists() # Value must always increase by exactly 1.
+
+- location: "/boards/$game_id/"
+  read: ifGameExists()
+  write: allowCreate() && ifGameExists()  # Boards can only be added for games that exist.
+
+- location: "/boards/$game_id/board_history/$board_num"
+  # Only the next board can be added; i.e. the "$board_num" must be one less than "moves".
+  write: allowCreate() && ifGameExists() && ifIsNextBoard()
+

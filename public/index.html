@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>An Atlantis board</title>
+  <style type="text/css" title="currentStyle" media="screen">
+    #container {
+      margin:0px auto;
+      padding:10px;
+      text-align:center;
+
+      width:1100px;
+      background-color:#FFFFFF;
+    }
+    .bordered {
+      margin:0px auto;
+      width:1024px;
+      margin-bottom:10px;
+      border:1px solid black;
+    }
+    .lightback {
+      background-color:#DDDDFF;
+    }
+    input#stepButton {
+      width: 300px;
+      height: 100px;
+      background-color: lightgreen;
+      font-size:2em;
+    }
+  </style>
+
+  <!-- We use Firebase as our backend -->
+  <script src='https://cdn.firebase.com/js/client/2.2.1/firebase.js'></script> 
+  <script src="board.js"></script>
+  <script src="draw.js"></script>
+  <script src="data.js"></script>
+  <script src="demo.js"></script>
+
+  <!-- Load an example board from a pseudo-JSON file, then display it. -->
+  <script language="JavaScript" type="text/javascript">
+    var QueryString = function () {
+      // This function is anonymous, is executed immediately and 
+      // the return value is assigned to QueryString!
+      var query_string = {};
+      var query = window.location.search.substring(1);
+      var vars = query.split("&");
+      for (var i=0;i<vars.length;i++) {
+        var pair = vars[i].split("=");
+            // If first entry with this name
+        if (typeof query_string[pair[0]] === "undefined") {
+          query_string[pair[0]] = decodeURIComponent(pair[1]);
+            // If second entry with this name
+        } else if (typeof query_string[pair[0]] === "string") {
+          var arr = [ query_string[pair[0]],decodeURIComponent(pair[1]) ];
+          query_string[pair[0]] = arr;
+            // If third or later entry with this name
+        } else {
+          query_string[pair[0]].push(decodeURIComponent(pair[1]));
+        }
+      } 
+      return query_string;
+    }();
+
+    function main() {
+      game_id = QueryString.game;
+      createBoard();
+      if (game_id == null || game_id == "") {
+        SetUp();
+        createGame();
+      } else {
+        openGame();
+      }
+    }
+  </script>
+</head>
+
+<body onload="main();">
+  <!-- The following button and text field are here just for a quick-and-dirty demo -->
+  <input type="button" id="stepButton" onclick="DoMove()" style="big-btn" value="Demo move!"></input><br/><br/>
+  Game URL: <input type="text" id="gameURL" size="100" value="Loading..."></input>
+
+  <div id="container">
+    <canvas id="atlantis" width="1024" height="768" class="bordered lightback">
+      Your browser doesn't support the <i>canvas</i> tag. Get a proper browser.
+    </canvas>
+  </div>
+</body>
+</html>
