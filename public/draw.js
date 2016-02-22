@@ -11,6 +11,7 @@ var pointDist = hexagonSide * 0.655
 var defaultColor = "black";
 var coreColor = "white";
 var colors = ["red", "blue", "green", "orange", "yellow", "pink"];
+var lightColors = ["#FF6666", "#6666FF", "#33CC33", "#FFCC00", "GoldenRod", "HotPink"]
 var showCoords = true;
 
 var offsetX;  // Pixels.
@@ -101,6 +102,7 @@ function drawPoint(point) {
 	var is_growing_point = point.tower != null ? point.tower.is_growing_point : 0;
   var is_dead = point.is_dead;
   var player = point.tower != null ? point.tower.player : -1;
+  var highlight = point.highlight;
 	
 	// Determine the center of the point.
   screen_pos = screenCoordinates(point.pos.x, point.pos.y);
@@ -110,6 +112,9 @@ function drawPoint(point) {
   ctx.textBaseline = "middle";
 
 	var color = (player >= 0 ? colors[player] : defaultColor);
+  if (highlight) {
+    color = lightColors[player];
+  }
 	ctx.strokeStyle = color;
 	ctx.fillStyle = color;
 

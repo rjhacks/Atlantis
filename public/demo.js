@@ -45,20 +45,25 @@ function DoMove() {
     forEachNeighbour(0, 0, context, function(x, y, context) {
       if (context.done) return;
       fromPoint = getPoint(x, y);
-      if (fromPoint.tower == null) return;
-      MoveBlocks(fromPoint, context.toPoint, 1);
-      RemoveBlocksFromTower(fromPoint, 1);
+      if (fromPoint.tower == null || fromPoint.tower.height == 0) return;
+      if (!ApplyMove(fromPoint.pos, context.toPoint.pos, 1)) {
+        console.log("Illegal move...");
+      }
       context.done = true;
     });
   }
-
-  commitMove();
 
   if (PlayerWillTopple(0 /* player */)) {
     var b = document.getElementById("stepButton");
     b.onclick = DoToppleOrGrow;
     b.value = "Do Topple/Grow";
   }
+
+  redrawBoard();
+}
+
+function FinishMove() {
+  commitMove();
 }
 
 function DoToppleOrGrow() {
@@ -76,7 +81,7 @@ function DoToppleOrGrow() {
       b.value = "Do Move";
     }
   }
-  commitMove();
+  FinishMove();
 }
 
 function fillURLBox() {

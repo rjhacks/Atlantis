@@ -10,6 +10,9 @@ function getPoint(x, y) {
 function setPoint(point) {
   allPoints.set(PosStr(point.pos), point);
 }
+function equalsPoint(point1, point2) {
+  return point1.pos.x == point2.pos.x && point1.pos.y == point2.pos.y;
+}
 
 // The list of all the Segments in the game.
 var segments = [];
@@ -55,6 +58,7 @@ function Point(segment, x, y) {
   this.pos = new Position(x, y);
   this.tower = null;
   this.is_dead = false;
+  this.highlight = false;  // Purely a hint to UI. Not persisted.
 }
 
 function RemoveBlocksFromTower(point, num_blocks) {
@@ -86,6 +90,7 @@ function MoveBlocks(fromPoint, toPoint, num_blocks) {
     num_blocks -= num_to_remove;
   }
   if (num_blocks > 0) AddBlocksToTower(toPoint, fromPoint.tower.player, num_blocks); 
+  return num_blocks;
 }
 
 function WillTopple(point) {
@@ -153,5 +158,48 @@ function GrowAll(player) {
     if (point.tower == null || point.tower.player != player) continue;
     MaybeGrow(point);
   }
+}
+
+// Modifies the game state with the given move, if legal. If "showTrail" is true, 
+// Any changes to the board will be highlighted. Returns true if a change was applied,
+// or false if the move wasn't legal.
+function ApplyMove(fromPos, toPos, showTrail) {
+  var fromPoint = getPoint(fromPos.x, fromPos.y);
+  var toPoint = getPoint(toPos.x, toPos.y);
+  
+  // Legal moves either change only x and y coordinates, or change x and y in the same way.
+  var posDelta = new Position(toPos.x - fromPos.x, toPos.y - fromPos.y);
+  var xStep = posDelta.x != 0 ? (posDelta.x > 0 ? 1 : -1) : 0;
+  var yStep = posDelta.y != 0 ? (posDelta.y > 0 ? 1 : -1) : 0;
+  if (posDelta.x == 0 && posDelta.y == 0) return false;
+  if (posDelta.x != 0 && posDelta.y != 0 && posDelta.x != posDelta.y) return false;
+  
+  // There must be enough blocks on the origin point to complete the desired move.
+  var steps = posDelta.x != 0 ? Math.abs(posDelta.x) : Math.abs(posDelta.y);
+  if (fromPoint.tower == null) return false;
+  if (fromPoint.tower.height < steps) return false;
+
+  // Step along the path taken, making any appropriate changes.
+  var numBlocks = steps;
+  var lastPoint = fromPoint;
+  var currPos = clone(fromPos);
+  for (i = 1; i <= steps; i++) {
+    currPos.x += xStep;
+    currPos.y += yStep;
+    var currPoint = getPoint(currPos.x, currPos.y);
+    survivingBlocks = MoveBlocks(lastPoint, currPoint, numBlocks);
+    if (showTrail) {  
+      // Leave 0-height towers in place where steps happened.
+      lastPoint.tower.height -= numBlocks;
+    } else {
+      // Leave towers in their "final" state, clearing 0-height towers.
+      RemoveBlocksFromTower(lastPoint, numBlocks);
+    }
+    numBlocks = survivingBlocks;
+    lastPoint.highlight = showTrail;
+    lastPoint = currPoint;
+  }
+  lastPoint.highlight = showTrail;
+  return true;
 }
 

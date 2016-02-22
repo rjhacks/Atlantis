@@ -79,6 +79,10 @@ function commitMove() {
         dead_point.position = point.pos;
         board.dead_points.push(dead_point);
       } else if (point.tower != null) {
+        // For display purposes, we occasionally show 0-height non-growing points.
+        // Don't send these to the server. We can send 0-height growing points, as
+        // these exist during the toppling phase.
+        if (point.tower.height == 0 && !point.tower.is_growing_point) continue;
         var t = clone(point.tower);
         t.position = point.pos;
         board.towers.push(t);
