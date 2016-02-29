@@ -40,6 +40,11 @@ function getMouseY(e) {
 }
 
 function play_mouseClicked(e) {
+  if (player_id != null && player_id != turn_player) {
+    // It's a different player's turn. Do nothing.
+    return;
+  }
+
   // We need to first reset the board to its base-position, since tentative moves
   // may have been displayed.
   unpackBoard();
@@ -64,8 +69,7 @@ function play_mouseClicked(e) {
 
   if (ApplyMove(play_fromPoint.pos, point.pos, false /* tentative */)) {
     serializeBoard();
-    b_reset.disabled = false;
-    b_reset.className = "big-btn bad";
+    enableButton(b_reset, "bad");
   }
   play_fromPoint = null; 
   play_toPoint = null;
@@ -97,27 +101,49 @@ function play_mouseMoved(e) {
   redrawBoard();
 }
 
+function disableButton(btn) {
+  btn.disabled = true;
+  btn.className = "big-btn disabled";
+}
+
+function enableButton(btn, style) {
+  btn.disabled = false;
+  btn.className = "big-btn " + style;
+}
+
 function play_BoardChanged() {
   // Determine which player's turn it is.
   turn_player = game.turn.turn_number % game.players.length;
-  if (game.turn.board_number == 0) {
-    // We're in the move-phase.
-    b_move.disabled = false;
-    b_move.className = "big-btn good";
-    b_topple.disabled = true;
-    b_topple.className = "big-btn disabled";
-    b_reset.disabled = true;
-    b_reset.className = "big-btn disabled";
-    t_status.innerHTML = "It's " + game.players[turn_player].name + "'s turn to move.";
+  var is_move_phase = game.turn.board_number == 0;
+  player_name = game.players[turn_player].name;
+  var move_msg = "It's " + player_name + "'s turn to move.";
+  var topple_msg = player_name + " is toppling.";
+  if (player_id != null && player_id != turn_player) {
+    // It's a different player's turn.
+    disableButton(b_move);
+    disableButton(b_topple);
+    disableButton(b_reset);
   } else {
-    // We're in the topple/grow phase.
-    b_move.disabled = true;
-    b_move.className = "big-btn disabled";
-    b_topple.disabled = false;
-    b_topple.className = "big-btn good";
-    b_reset.disabled = true;
-    b_reset.className = "big-btn disabled";
-    t_status.innerHTML = game.players[turn_player].name + " is toppling.";
+    // It's our turn, either on a shared screen or not.
+    if (is_move_phase) {
+      enableButton(b_move, "good");
+      disableButton(b_topple);
+      disableButton(b_reset);
+    } else {
+      disableButton(b_move);
+      enableButton(b_topple, "good");
+      disableButton(b_reset);
+    }
+    if (player_id != null) {
+      // This screen has one player. Address them as "you".
+      move_msg = "It's your turn to move. Press \"Finish move\" when ready.";
+      topple_msg = "You're toppling. Press \"Topple / Grow\".";
+    }
+  }
+  if (is_move_phase) {
+    t_status.innerHTML = move_msg;
+  } else {
+    t_status.innerHTML = topple_msg; 
   }
 }
 
@@ -135,12 +161,12 @@ function play_FinishMove() {
   // Perform the move-step, and progress to play_ToppleOrGrow iff 
   // there is something to do there. Have the "Finish move" button
   // disabled for that period.
-  b_move.disabled = true;
-  b_move.className = "big-btn disabled";
+  disableButton(b_move);  // To prevent double-click.
   play_nextStep(false, play_ToppleOrGrow);
 }
 
 function play_ToppleOrGrow() {
+  disableButton(b_topple);  // To prevent double-click.
   if (PlayerWillTopple(turn_player)) {
     DoOneToppleRound(turn_player);
     play_nextStep(false);
