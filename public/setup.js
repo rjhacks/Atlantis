@@ -24,7 +24,7 @@ function segmentRightDown(seg) {
 function setup_Begin() {
   var max_columns = 6;
   var max_rows = 5;
-  var direction = segmentBelow;
+  var direction = segmentAbove;
   var segment = null;
   for (var i = 0; i < max_columns; i++) {
     for (var j = 0; j < max_rows; j++) {
@@ -67,6 +67,8 @@ function setup_SegmentsSelected() {
   t_status.innerHTML = "Please select the player's starting segments.";
   b_ready.value = "Use these positions";
   b_ready.onclick = setup_PlayerPositionsChosen;
+  offsetX = 0;
+  offsetY = 0;
   redrawBoard();
 }
 

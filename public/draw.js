@@ -14,8 +14,9 @@ var colors = ["red", "blue", "green", "orange", "yellow", "pink"];
 var lightColors = ["#FF6666", "#6666FF", "#33CC33", "#FFCC00", "GoldenRod", "HotPink"]
 var showCoords = true;
 
-var offsetX = 115;  // Pixels.
-var offsetY = 100;  // Pixels.
+var offsetX = 0;  // Will center the hexagons.
+var offsetY = 0;
+var desiredOffsetY = 20;
 
 function hasSupport(elem) {
 	return elem.getContext;
@@ -26,7 +27,6 @@ function createBoard() {
   if (hasSupport(atlantis)) {
     ctx = atlantis.getContext('2d');
     ctx.save();
-    ctx.translate(offsetX, offsetY);
   }
 }
 
@@ -168,6 +168,32 @@ function drawPoint(point, highlight, color) {
 
 function redrawBoard() {
 	if (hasSupport(atlantis)) {
+    // Determine an X offset that put the board in the middle of screen.
+    if (offsetX == 0 && offsetY == 0) {
+      ctx.restore();
+      ctx.save();
+      var leftmost_x = Number.MAX_SAFE_INTEGER;
+      var rightmost_x = -Number.MAX_SAFE_INTEGER;
+      var lowest_y = Number.MAX_SAFE_INTEGER;
+      var highest_y = -Number.MAX_SAFE_INTEGER;
+      for (segment of allSegments.values()) {
+        var screen_pos = screenCoordinates(segment.center_x, segment.center_y);
+        if (screen_pos.x < leftmost_x) leftmost_x = screen_pos.x;
+        if (screen_pos.x > rightmost_x) rightmost_x = screen_pos.x;
+        if (screen_pos.y < lowest_y) lowest_y = screen_pos.y;
+        if (screen_pos.y > highest_y) highest_y = screen_pos.y;
+      }
+      // Compute X.
+      var width = (rightmost_x - leftmost_x) + 2 * hexagonSide;
+      desiredOffsetX = ((atlantis.width - width) / 2) + hexagonSide;
+      offsetX = desiredOffsetX - leftmost_x;
+      // Compute Y.
+      offsetY = (desiredOffsetY - lowest_y) + hexagonSide;  // A hexagonSide is slightly too much, but eh.
+      totalHeight = (highest_y - lowest_y) + 2 * hexagonSide + 2 * desiredOffsetY;
+      atlantis.height = totalHeight;
+      ctx.translate(offsetX, offsetY);
+    }
+
 		ctx.clearRect(-offsetX, -offsetY, atlantis.offsetWidth, atlantis.offsetHeight);
     for (segment of allSegments.values()) {
       drawSegment(segment);
