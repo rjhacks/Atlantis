@@ -8,9 +8,19 @@
       margin:0px auto;
       padding:10px;
       text-align:center;
-
       width:1100px;
-      background-color:#FFFFFF;
+    }
+    #messageBox {
+      margin:10px auto;
+      padding-top:10px;
+      padding-bottom:10px;
+      text-align:center;
+      background-color:#F7ED8C;
+      width:1024px;
+      font-size:20px;
+    }
+    #atlantis {
+      background-color:#DDDDFF;
     }
     .bordered {
       margin:0px auto;
@@ -18,14 +28,20 @@
       margin-bottom:10px;
       border:1px solid black;
     }
-    .lightback {
-      background-color:#DDDDFF;
-    }
-    input#stepButton {
+    .big-btn {
       width: 300px;
       height: 100px;
       background-color: lightgreen;
       font-size:2em;
+    }
+    .good {
+      background-color: lightgreen;
+    }
+    .bad {
+      background-color: red;
+    }
+    .disabled {
+      background-color: lightgray;
     }
   </style>
 
@@ -35,6 +51,7 @@
   <script src="draw.js"></script>
   <script src="data.js"></script>
   <script src="demo.js"></script>
+  <script src="play.js"></script>
 
   <!-- Load an example board from a pseudo-JSON file, then display it. -->
   <script language="JavaScript" type="text/javascript">
@@ -63,6 +80,7 @@
 
     function main() {
       game_id = QueryString.game;
+      player_id = QueryString.player;
       createBoard();
       if (game_id == null || game_id == "") {
         SetUp();
@@ -70,18 +88,24 @@
       } else {
         openGame();
       }
+      play_SetUp();
     }
   </script>
 </head>
 
 <body onload="main();">
   <!-- The following button and text field are here just for a quick-and-dirty demo -->
-  <input type="button" id="stepButton" onclick="DoMove()" style="big-btn" value="Demo move!"></input><br/><br/>
-  <input type="button" id="stepButton" onclick="FinishMove()" style="big-btn" value="Commit!"></input><br/><br/>
-  Game URL: <input type="text" id="gameURL" size="100" value="Loading..."></input>
-
   <div id="container">
-    <canvas id="atlantis" width="1024" height="768" class="bordered lightback">
+    <center>
+      <input type="button" id="finishButton" onclick="play_FinishMove()" class="big-btn good" value="Finish move"></input>
+      <input type="button" id="toppleButton" onclick="play_ToppleOrGrow()" class="big-btn disabled" value="Topple / Grow" disabled=true></input>
+      <input type="button" id="resetButton" onclick="play_Reset()" class="big-btn disabled" value="Reset" disabled=true></input><br /><br />
+      Game URL: <input type="text" id="gameURL" size="100" value="Loading..."></input>
+    </center>
+    <div id="messageBox" class="bordered">
+      Ready to play?
+    </div>
+    <canvas id="atlantis" width="1024" height="768" class="bordered">
       Your browser doesn't support the <i>canvas</i> tag. Get a proper browser.
     </canvas>
   </div>

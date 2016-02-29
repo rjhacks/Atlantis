@@ -164,9 +164,29 @@ function drawPoint(point) {
 function redrawBoard() {
 	if (hasSupport(atlantis)) {
 		ctx.clearRect(-offsetX, -offsetY, atlantis.offsetWidth, atlantis.offsetHeight);
-    for (segment of segments) {
+    for (segment of allSegments.values()) {
       drawSegment(segment);
     }
   }
 }
 
+function coordsInCircle(coordsPos, centerPos, radius) {
+  var distX = Math.abs(coordsPos.x - centerPos.x);
+  var distY = Math.abs(coordsPos.y - centerPos.y);
+  var dist = Math.sqrt(distX * distX + distY*distY);
+  return dist < radius;
+}
+
+function GetPointAt(canvasPos) {
+  // TODO(rjhacks): this can be optimized. For example, we could first find likely
+  //                candidate segements, then only scan the appropriate points.
+  for (var point of allPoints.values()) {
+    centerPos = clone(screenCoordinates(point.pos.x, point.pos.y));
+    centerPos.x += offsetX;
+    centerPos.y += offsetY;
+    if (coordsInCircle(canvasPos, centerPos, pointRadius)) {
+      return point;
+    }
+  }
+  return null;
+}

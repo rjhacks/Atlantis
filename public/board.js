@@ -14,8 +14,29 @@ function equalsPoint(point1, point2) {
   return point1.pos.x == point2.pos.x && point1.pos.y == point2.pos.y;
 }
 
+function clearHighlights() {
+  for (point of allPoints.values()) {
+    point.highlight = false;
+  }
+}
+
+function zeroForNull(val) {
+  if (val === undefined || val === null) {
+    return 0;
+  }
+  return val;
+}
+
 // The list of all the Segments in the game.
-var segments = [];
+var allSegments = new Map();
+function getSegment(x, y) {
+  var p = new Position(x, y);
+  if (!allSegments.has(PosStr(p))) return null;
+  return allSegments.get(PosStr(p));
+}
+function setSegment(segment) {
+  allSegments.set(PosStr(new Position(segment.center_x, segment.center_y)), segment);
+}
 
 // For every possible neighbours of point (x,y), calls func(neighbour_x, neighbour_y, context).
 function forEachNeighbour(x, y, context, func) {
@@ -30,14 +51,15 @@ function forEachNeighbour(x, y, context, func) {
 function Segment(center_x, center_y) {
 	this.center_x = center_x;
   this.center_y = center_y;
+  this.moved = false;  // A rules-hint.
   this.points = [];
   var addPoint = function(x, y, segment) {
     var point = new Point(segment, x, y);
     segment.points.push(point);
-    setPoint(point);
   }
   addPoint(center_x, center_y, this);
   forEachNeighbour(center_x, center_y, this /* context = segment */, addPoint);
+  setSegment(this);
 }
 
 function Position(x, y) {
@@ -59,6 +81,9 @@ function Point(segment, x, y) {
   this.tower = null;
   this.is_dead = false;
   this.highlight = false;  // Purely a hint to UI. Not persisted.
+
+  // Register this point with the global points map.
+  setPoint(this);
 }
 
 function RemoveBlocksFromTower(point, num_blocks) {
@@ -160,13 +185,34 @@ function GrowAll(player) {
   }
 }
 
-// Modifies the game state with the given move, if legal. If "showTrail" is true, 
-// Any changes to the board will be highlighted. Returns true if a change was applied,
-// or false if the move wasn't legal.
-function ApplyMove(fromPos, toPos, showTrail) {
+function HasGrowingPoints(player_id) {
+  for (var point of allPoints.values()) {
+    if (point.tower != null && point.tower.player == player_id 
+        && point.tower.is_growing_point) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Modifies the game state with the given move, if legal. If "tentative" is true, 
+// any changes to the board will be highlighted. If it is false, the move is recorded
+// as having happened, and future moves for this segment/tower will be prevented. 
+// Returns true if a legal move was displayed, or false if the move wasn't legal.
+function ApplyMove(fromPos, toPos, tentative) {
   var fromPoint = getPoint(fromPos.x, fromPos.y);
   var toPoint = getPoint(toPos.x, toPos.y);
   
+  // The source segment can't have moved yet.
+  if (fromPoint.segment != null && fromPoint.segment.moved) return false;
+
+  // The source point cannot be a growing point.
+  if (fromPoint.tower != null && fromPoint.tower.is_growing_point) return false;
+
+  // The target point must exist, must not be dead, and must not be a growing point.
+  if (toPoint == null || toPoint.is_dead) return false;
+  if (toPoint.tower != null && toPoint.tower.is_growing_point) return false;
+
   // Legal moves either change only x and y coordinates, or change x and y in the same way.
   var posDelta = new Position(toPos.x - fromPos.x, toPos.y - fromPos.y);
   var xStep = posDelta.x != 0 ? (posDelta.x > 0 ? 1 : -1) : 0;
@@ -177,29 +223,58 @@ function ApplyMove(fromPos, toPos, showTrail) {
   // There must be enough blocks on the origin point to complete the desired move.
   var steps = posDelta.x != 0 ? Math.abs(posDelta.x) : Math.abs(posDelta.y);
   if (fromPoint.tower == null) return false;
-  if (fromPoint.tower.height < steps) return false;
+  if (fromPoint.tower.height - zeroForNull(fromPoint.tower.num_moved_blocks) < steps) return false;
 
-  // Step along the path taken, making any appropriate changes.
-  var numBlocks = steps;
-  var lastPoint = fromPoint;
+  // Step along the path, ensuring this is a legal move.
   var currPos = clone(fromPos);
+  var player = fromPoint.tower.player;
   for (i = 1; i <= steps; i++) {
     currPos.x += xStep;
     currPos.y += yStep;
     var currPoint = getPoint(currPos.x, currPos.y);
-    survivingBlocks = MoveBlocks(lastPoint, currPoint, numBlocks);
-    if (showTrail) {  
-      // Leave 0-height towers in place where steps happened.
-      lastPoint.tower.height -= numBlocks;
-    } else {
-      // Leave towers in their "final" state, clearing 0-height towers.
-      RemoveBlocksFromTower(lastPoint, numBlocks);
+    if (currPoint.is_dead) return false;
+    if (currPoint.tower != null && currPoint.tower.is_growing_point) return false;
+  }
+
+  // We're now certain this is a legal move. Step along the path taken, making any appropriate changes.
+  var numBlocks = steps;
+  var lastPoint = fromPoint;
+  currPos = clone(fromPos);
+  var player = fromPoint.tower.player;
+  for (i = 1; i <= steps; i++) {
+    currPos.x += xStep;
+    currPos.y += yStep;
+    var currPoint = getPoint(currPos.x, currPos.y);
+    var survivingBlocks = 0;
+    if (numBlocks > 0) {
+      survivingBlocks = MoveBlocks(lastPoint, currPoint, numBlocks);
+      if (tentative) {  
+        // Leave 0-height towers in place where steps happened.
+        lastPoint.tower.height -= numBlocks;
+      } else {
+        // Leave towers in their "final" state, clearing 0-height towers.
+        RemoveBlocksFromTower(lastPoint, numBlocks);
+      }
+      numBlocks = survivingBlocks;
     }
-    numBlocks = survivingBlocks;
-    lastPoint.highlight = showTrail;
+    if (numBlocks == 0 && tentative && currPoint.tower == null) {
+      // Leave 0-height towers in place where steps happened, even when there
+      // was total annihilation at some point.
+      currPoint.tower = new Tower(player, 0, false);
+    }
+    lastPoint.highlight = tentative;
     lastPoint = currPoint;
   }
-  lastPoint.highlight = showTrail;
+  lastPoint.highlight = tentative;
+  if (!tentative) {
+    // Prevent the moved blocks from being moved again this turn.
+    if (lastPoint.tower != null) {
+      if (lastPoint.tower.num_moved_blocks === undefined) lastPoint.tower.num_moved_blocks = 0;
+      lastPoint.tower.num_moved_blocks += numBlocks;
+    }
+    // Prevent the moved segment from being moved again this turn.
+    if (fromPoint.segment != null) fromPoint.segment.moved = true;
+  }
   return true;
 }
 

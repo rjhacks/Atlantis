@@ -6,25 +6,37 @@
       ".write":"false",
       ".read":"false",
       "$game_id": {
-        ".write":"((((!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('moves').exists())&&(!newData.child('moves').exists()||newData.child('moves').isNumber())&&(!newData.child('rules_version').exists()||newData.child('rules_version').isString())&&(!newData.child('players').exists()||newData.child('players').hasChildren())&&newData.exists()&&!data.exists())))",
+        ".write":"((((!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('turn').exists())&&(!newData.child('turn').exists()||newData.child('turn').hasChildren())&&(!newData.child('turn').child('turn_number').exists()||newData.child('turn').child('turn_number').isNumber())&&(!newData.child('turn').child('board_number').exists()||newData.child('turn').child('board_number').isNumber())&&(!newData.child('boards_within_turn').exists()||newData.child('boards_within_turn').isNumber())&&(!newData.child('rules_version').exists()||newData.child('rules_version').isString())&&(!newData.child('players').exists()||newData.child('players').hasChildren())&&newData.exists()&&!data.exists())))",
         ".read":"((root.child('games').child($game_id).exists()))",
-        "moves": {
-          ".write":"((((newData.parent().val()==null||newData.parent().child('moves').exists())&&(!newData.exists()||newData.isNumber())&&(newData.parent().exists()&&!data.parent().exists()||newData.exists()&&newData.val()==data.val()+1&&root.child('boards').child($game_id).child('board_history').child(newData.val()+'').exists()))))",
-          ".read":"(((root.child('games').child($game_id).exists())))"
+        "turn": {
+          ".write":"((((newData.parent().val()==null||newData.parent().child('turn').exists())&&(!newData.exists()||newData.hasChildren())&&(!newData.child('turn_number').exists()||newData.child('turn_number').isNumber())&&(!newData.child('board_number').exists()||newData.child('board_number').isNumber())&&(newData.parent().exists()&&!data.parent().exists()||root.child('games').child($game_id).exists()))))",
+          ".read":"(((root.child('games').child($game_id).exists())))",
+          "turn_number": {
+            ".write":"((((newData.parent().parent().val()==null||newData.parent().parent().child('turn').exists())&&(!newData.exists()||newData.isNumber())&&(newData.parent().parent().exists()&&!data.parent().parent().exists()||root.child('games').child($game_id).exists()))))",
+            ".read":"(((root.child('games').child($game_id).exists())))"
+          },
+          "board_number": {
+            ".write":"((((newData.parent().parent().val()==null||newData.parent().parent().child('turn').exists())&&(!newData.exists()||newData.isNumber())&&(newData.parent().parent().exists()&&!data.parent().parent().exists()||root.child('games').child($game_id).exists()))))",
+            ".read":"(((root.child('games').child($game_id).exists())))"
+          }
+        },
+        "boards_within_turn": {
+          ".write":"((((newData.parent().val()==null||newData.parent().child('turn').exists())&&(!newData.exists()||newData.isNumber())&&newData.parent().exists()&&!data.parent().exists())))",
+          ".read":"((root.child('games').child($game_id).exists()))"
         },
         "rules_version": {
-          ".write":"((((newData.parent().val()==null||newData.parent().child('moves').exists())&&(!newData.exists()||newData.isString())&&newData.parent().exists()&&!data.parent().exists())))",
+          ".write":"((((newData.parent().val()==null||newData.parent().child('turn').exists())&&(!newData.exists()||newData.isString())&&newData.parent().exists()&&!data.parent().exists())))",
           ".read":"((root.child('games').child($game_id).exists()))"
         },
         "players": {
-          ".write":"((((newData.parent().val()==null||newData.parent().child('moves').exists())&&(!newData.exists()||newData.hasChildren())&&newData.parent().exists()&&!data.parent().exists())))",
+          ".write":"((((newData.parent().val()==null||newData.parent().child('turn').exists())&&(!newData.exists()||newData.hasChildren())&&newData.parent().exists()&&!data.parent().exists())))",
           ".read":"((root.child('games').child($game_id).exists()))",
           "$player_id": {
-            ".write":"((((newData.parent().parent().val()==null||newData.parent().parent().child('moves').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('name').exists())&&(!newData.child('name').exists()||newData.child('name').isString())&&newData.parent().parent().exists()&&!data.parent().parent().exists())))",
-            ".validate":"((((newData.parent().parent().val()==null||newData.parent().parent().child('moves').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('name').exists())&&(!newData.child('name').exists()||newData.child('name').isString())&&newData.parent().parent().exists()&&!data.parent().parent().exists())))",
+            ".write":"((((newData.parent().parent().val()==null||newData.parent().parent().child('turn').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('name').exists())&&(!newData.child('name').exists()||newData.child('name').isString())&&newData.parent().parent().exists()&&!data.parent().parent().exists())))",
+            ".validate":"((((newData.parent().parent().val()==null||newData.parent().parent().child('turn').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('name').exists())&&(!newData.child('name').exists()||newData.child('name').isString())&&newData.parent().parent().exists()&&!data.parent().parent().exists())))",
             ".read":"((root.child('games').child($game_id).exists()))",
             "name": {
-              ".write":"((((newData.parent().parent().parent().val()==null||newData.parent().parent().parent().child('moves').exists())&&(newData.parent().val()==null||newData.parent().child('name').exists())&&(!newData.exists()||newData.isString())&&newData.parent().parent().parent().exists()&&!data.parent().parent().parent().exists())))",
+              ".write":"((((newData.parent().parent().parent().val()==null||newData.parent().parent().parent().child('turn').exists())&&(newData.parent().val()==null||newData.parent().child('name').exists())&&(!newData.exists()||newData.isString())&&newData.parent().parent().parent().exists()&&!data.parent().parent().parent().exists())))",
               ".read":"((root.child('games').child($game_id).exists()))"
             },
             "$other":{".validate":"false"}
@@ -37,28 +49,35 @@
       ".write":"false",
       ".read":"false",
       "$game_id": {
-        ".write":"((((!newData.exists()||newData.hasChildren())&&(!newData.child('board_history').exists()||newData.child('board_history').hasChildren())&&newData.exists()&&!data.exists()&&root.child('games').child($game_id).exists())))",
+        ".write":"false",
         ".read":"((root.child('games').child($game_id).exists()))",
-        "board_history": {
-          ".write":"((((!newData.exists()||newData.hasChildren())&&newData.parent().exists()&&!data.parent().exists()&&root.child('games').child($game_id).exists())))",
+        "turn_history": {
+          ".write":"false",
           ".read":"((root.child('games').child($game_id).exists()))",
-          "$board_num": {
-            ".write":"((((!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('segments').exists())&&(!newData.child('segments').exists()||newData.child('segments').hasChildren())&&(!newData.child('towers').exists()||newData.child('towers').hasChildren())&&(!newData.child('dead_points').exists()||newData.child('dead_points').hasChildren())&&(newData.parent().parent().exists()&&!data.parent().parent().exists()&&root.child('games').child($game_id).exists()||newData.exists()&&!data.exists()&&root.child('games').child($game_id).exists()&&root.child('games').child($game_id).child('moves').val()+1+''==$board_num))))",
-            ".validate":"((((!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('segments').exists())&&(!newData.child('segments').exists()||newData.child('segments').hasChildren())&&(!newData.child('towers').exists()||newData.child('towers').hasChildren())&&(!newData.child('dead_points').exists()||newData.child('dead_points').hasChildren())&&(newData.parent().parent().exists()&&!data.parent().parent().exists()&&root.child('games').child($game_id).exists()||newData.exists()&&!data.exists()&&root.child('games').child($game_id).exists()&&root.child('games').child($game_id).child('moves').val()+1+''==$board_num))))",
-            ".read":"(((root.child('games').child($game_id).exists())))",
-            "segments": {
-              ".write":"((((newData.parent().val()==null||newData.parent().child('segments').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.parent().parent().parent().exists()&&!data.parent().parent().parent().exists()&&root.child('games').child($game_id).exists()||newData.parent().exists()&&!data.parent().exists()&&root.child('games').child($game_id).exists()&&root.child('games').child($game_id).child('moves').val()+1+''==$board_num))))",
-              ".read":"(((root.child('games').child($game_id).exists())))"
-            },
-            "towers": {
-              ".write":"((((newData.parent().val()==null||newData.parent().child('segments').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.parent().parent().parent().exists()&&!data.parent().parent().parent().exists()&&root.child('games').child($game_id).exists()||newData.parent().exists()&&!data.parent().exists()&&root.child('games').child($game_id).exists()&&root.child('games').child($game_id).child('moves').val()+1+''==$board_num))))",
-              ".read":"(((root.child('games').child($game_id).exists())))"
-            },
-            "dead_points": {
-              ".write":"((((newData.parent().val()==null||newData.parent().child('segments').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.parent().parent().parent().exists()&&!data.parent().parent().parent().exists()&&root.child('games').child($game_id).exists()||newData.parent().exists()&&!data.parent().exists()&&root.child('games').child($game_id).exists()&&root.child('games').child($game_id).child('moves').val()+1+''==$board_num))))",
-              ".read":"(((root.child('games').child($game_id).exists())))"
-            },
-            "$other":{".validate":"false"}
+          "$turn_number": {
+            ".write":"false",
+            ".read":"((root.child('games').child($game_id).exists()))",
+            "board_history": {
+              ".write":"false",
+              ".read":"((root.child('games').child($game_id).exists()))",
+              "$board_number": {
+                ".write":"((((!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('segments').exists())&&(!newData.child('segments').exists()||newData.child('segments').hasChildren())&&(!newData.child('towers').exists()||newData.child('towers').hasChildren())&&(!newData.child('dead_points').exists()||newData.child('dead_points').hasChildren())&&root.child('games').child($game_id).exists()&&(root.child('games').child($game_id).child('turn').child('turn_number').val()+1+''==$turn_number&&$board_number=='0'||root.child('games').child($game_id).child('turn').child('turn_number').val()+''==$turn_number&&root.child('games').child($game_id).child('turn').child('board_number').val()+1+''==$board_number))))",
+                ".read":"(((root.child('games').child($game_id).exists())))",
+                "segments": {
+                  ".write":"((((newData.parent().val()==null||newData.parent().child('segments').exists())&&(!newData.exists()||newData.hasChildren())&&root.child('games').child($game_id).exists()&&(root.child('games').child($game_id).child('turn').child('turn_number').val()+1+''==$turn_number&&$board_number=='0'||root.child('games').child($game_id).child('turn').child('turn_number').val()+''==$turn_number&&root.child('games').child($game_id).child('turn').child('board_number').val()+1+''==$board_number))))",
+                  ".read":"(((root.child('games').child($game_id).exists())))"
+                },
+                "towers": {
+                  ".write":"((((newData.parent().val()==null||newData.parent().child('segments').exists())&&(!newData.exists()||newData.hasChildren())&&root.child('games').child($game_id).exists()&&(root.child('games').child($game_id).child('turn').child('turn_number').val()+1+''==$turn_number&&$board_number=='0'||root.child('games').child($game_id).child('turn').child('turn_number').val()+''==$turn_number&&root.child('games').child($game_id).child('turn').child('board_number').val()+1+''==$board_number))))",
+                  ".read":"(((root.child('games').child($game_id).exists())))"
+                },
+                "dead_points": {
+                  ".write":"((((newData.parent().val()==null||newData.parent().child('segments').exists())&&(!newData.exists()||newData.hasChildren())&&root.child('games').child($game_id).exists()&&(root.child('games').child($game_id).child('turn').child('turn_number').val()+1+''==$turn_number&&$board_number=='0'||root.child('games').child($game_id).child('turn').child('turn_number').val()+''==$turn_number&&root.child('games').child($game_id).child('turn').child('board_number').val()+1+''==$board_number))))",
+                  ".read":"(((root.child('games').child($game_id).exists())))"
+                },
+                "$other":{".validate":"false"}
+              }
+            }
           }
         },
         "$other":{".validate":"false"}
