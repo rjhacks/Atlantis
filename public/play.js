@@ -9,36 +9,6 @@ var b_topple;
 var b_reset;
 var t_status;
 
-function getMouseX(e) {
-  var posx = 0;
-  if (!e) var e = window.event;
-  if (e.pageX)  {
-    posx = e.pageX;
-  }
-  else if (e.clientX)   {
-    posx = e.clientX + document.body.scrollLeft
-      + document.documentElement.scrollLeft;
-  }
-
-  posx = posx - atlantis.offsetLeft;
-  return posx;
-}
-
-function getMouseY(e) {
-  var posy = 0;
-  if (!e) var e = window.event;
-  if (e.pageY)  {
-    posy = e.pageY;
-  }
-  else if (e.clientY)   {
-    posy = e.clientY + document.body.scrollTop
-      + document.documentElement.scrollTop;
-  }
-
-  posy = posy - atlantis.offsetTop;
-  return posy;
-}
-
 function play_mouseClicked(e) {
   if (player_id != null && player_id != turn_player) {
     // It's a different player's turn. Do nothing.
@@ -101,22 +71,14 @@ function play_mouseMoved(e) {
   redrawBoard();
 }
 
-function disableButton(btn) {
-  btn.disabled = true;
-  btn.className = "big-btn disabled";
-}
-
-function enableButton(btn, style) {
-  btn.disabled = false;
-  btn.className = "big-btn " + style;
-}
-
 function play_BoardChanged() {
   // Determine which player's turn it is.
   turn_player = game.turn.turn_number % game.players.length;
   var is_move_phase = game.turn.board_number == 0;
   player_name = game.players[turn_player].name;
-  var move_msg = "It's " + player_name + "'s turn to move.";
+  var color_msg = "(playing <font color=\"" + colors[turn_player] + "\">" 
+                  + colors[turn_player] + "</font>).";
+  var move_msg = "It's " + player_name + "'s turn " + color_msg;
   var topple_msg = player_name + " is toppling.";
   if (player_id != null && player_id != turn_player) {
     // It's a different player's turn.
@@ -136,7 +98,7 @@ function play_BoardChanged() {
     }
     if (player_id != null) {
       // This screen has one player. Address them as "you".
-      move_msg = "It's your turn to move. Press \"Finish move\" when ready.";
+      move_msg = "It's your turn to move " + color_msg + "<br/>Press \"Finish move\" when you're done.";
       topple_msg = "You're toppling. Press \"Topple / Grow\".";
     }
   }
@@ -147,11 +109,7 @@ function play_BoardChanged() {
   }
 }
 
-function play_SetUp() {
-  b_move = document.getElementById("finishButton");
-  b_topple = document.getElementById("toppleButton");
-  b_reset = document.getElementById("resetButton");
-  t_status = document.getElementById("messageBox");
+function play_Begin() {
   atlantis.onclick = play_mouseClicked; 
   atlantis.onmousemove = play_mouseMoved;
   onBoardChange(play_BoardChanged);

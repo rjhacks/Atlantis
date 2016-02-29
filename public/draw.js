@@ -14,8 +14,8 @@ var colors = ["red", "blue", "green", "orange", "yellow", "pink"];
 var lightColors = ["#FF6666", "#6666FF", "#33CC33", "#FFCC00", "GoldenRod", "HotPink"]
 var showCoords = true;
 
-var offsetX;  // Pixels.
-var offsetY;  // Pixels.
+var offsetX = 115;  // Pixels.
+var offsetY = 100;  // Pixels.
 
 function hasSupport(elem) {
 	return elem.getContext;
@@ -26,16 +26,15 @@ function createBoard() {
   if (hasSupport(atlantis)) {
     ctx = atlantis.getContext('2d');
     ctx.save();
-    offsetX = 200;
-    offsetY = atlantis.height / 2;
     ctx.translate(offsetX, offsetY);
   }
 }
 
 function drawSegment(segment) {
-  drawHexagon(segment.center_x, segment.center_y, ctx.lineWidth, defaultColor);
+  var color = segment.highlightPlayer !== undefined ? colors[segment.highlightPlayer] : defaultColor;
+  drawHexagon(segment.center_x, segment.center_y, segment.highlight, color);
   for (point of segment.points) {
-    drawPoint(point);
+    drawPoint(point, segment.highlight, color);
   }
 }
 
@@ -65,7 +64,7 @@ function screenCoordinates(point_x, point_y) {
   return new Position(screen_x, screen_y);
 }
 
-function drawHexagon(center_x, center_y, lineWidth, color) {
+function drawHexagon(center_x, center_y, highlight, color) {
   var screen_pos = screenCoordinates(center_x, center_y);
 
 	// move to the given coordinates
@@ -73,7 +72,9 @@ function drawHexagon(center_x, center_y, lineWidth, color) {
 	ctx.translate(screen_pos.x, screen_pos.y);
 
 	// draw the hexagon
-	ctx.fillStyle = "white";
+	ctx.fillStyle = highlight && color == defaultColor ? "#F2F2F2" : "white";
+  ctx.lineWidth = highlight ? 3 : 1;
+  ctx.strokeStyle = color;
 	var x = hexagonSide;
 	var y = 0;
 	ctx.beginPath();
@@ -97,12 +98,12 @@ function drawHexagon(center_x, center_y, lineWidth, color) {
 	ctx.restore();
 }
 
-function drawPoint(point) {
+function drawPoint(point, highlight, color) {
 	var slices = point.tower != null ? point.tower.height : 0;
 	var is_growing_point = point.tower != null ? point.tower.is_growing_point : 0;
   var is_dead = point.is_dead;
   var player = point.tower != null ? point.tower.player : -1;
-  var highlight = point.highlight;
+  highlight = highlight || point.highlight;
 	
 	// Determine the center of the point.
   screen_pos = screenCoordinates(point.pos.x, point.pos.y);
@@ -111,9 +112,13 @@ function drawPoint(point) {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-	var color = (player >= 0 ? colors[player] : defaultColor);
+	var color = (player >= 0 ? colors[player] : color);
   if (highlight) {
-    color = lightColors[player];
+    if (player >= 0) {
+      color = lightColors[player];
+    } else {
+      ctx.lineWidth = 2;
+    }
   }
 	ctx.strokeStyle = color;
 	ctx.fillStyle = color;
@@ -181,7 +186,7 @@ function GetPointAt(canvasPos) {
   // TODO(rjhacks): this can be optimized. For example, we could first find likely
   //                candidate segements, then only scan the appropriate points.
   for (var point of allPoints.values()) {
-    centerPos = clone(screenCoordinates(point.pos.x, point.pos.y));
+    var centerPos = clone(screenCoordinates(point.pos.x, point.pos.y));
     centerPos.x += offsetX;
     centerPos.y += offsetY;
     if (coordsInCircle(canvasPos, centerPos, pointRadius)) {
@@ -190,3 +195,22 @@ function GetPointAt(canvasPos) {
   }
   return null;
 }
+
+function GetSegmentAt(canvas_pos) {
+  // The relevant segment is the one where we're closest to the center point.
+  var closest_dist = Number.MAX_SAFE_INTEGER;
+  var closest_seg = null;
+  for (var seg of allSegments.values()) {
+    var center_pos = clone(screenCoordinates(seg.center_x, seg.center_y));
+    center_pos.x += offsetX;
+    center_pos.y += offsetY;
+    var dist = Math.pow(canvas_pos.x - center_pos.x, 2) + Math.pow(canvas_pos.y - center_pos.y, 2);
+    if (dist < closest_dist) {
+      closest_dist = dist;
+      closest_seg = seg;
+    }
+  }
+  return closest_seg;
+}
+
+

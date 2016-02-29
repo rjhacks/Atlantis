@@ -3,7 +3,7 @@ var atlantisFirebaseRef = new Firebase("https://atlantis-game.firebaseio.com/");
 var game_id = null;
 var fb_game = null;
 var fb_boards = null;
-var game = {turn: {turn_number: -1, board_number: -1}};
+var game = {turn: {turn_number: -1, board_number: -1}, players: []};
 var board = {};
 
 var connection_retries = 0;
@@ -20,16 +20,11 @@ function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-function createGame() {
+function createGame(onComplete) {
   fb_game = atlantisFirebaseRef.child("games/").push(game);
   game_id = fb_game.key();
-  console.log("Creating game with ID " + game_id);
   fb_turns = atlantisFirebaseRef.child("boards/" + game_id + "/turn_history/");
-  CommitTurn(referToGamePage);  // Commits the initial board.
-}
-
-function referToGamePage() {
-  location.href += "?game=" + game_id;  // This will reload the page, getting us to openGame().
+  CommitTurn(onComplete);  // Commits the initial board.
 }
 
 // Load an existing game.

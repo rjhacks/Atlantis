@@ -10,7 +10,7 @@
       text-align:center;
       width:1100px;
     }
-    #messageBox {
+    .infoBox {
       margin:10px auto;
       padding-top:10px;
       padding-bottom:10px;
@@ -19,17 +19,19 @@
       width:1024px;
       font-size:20px;
     }
+    .namesInput {
+      font-size:20px;
+    }
     #atlantis {
       background-color:#DDDDFF;
     }
     .bordered {
-      margin:0px auto;
       width:1024px;
       margin-bottom:10px;
       border:1px solid black;
     }
     .big-btn {
-      width: 300px;
+      width: 320px;
       height: 100px;
       background-color: lightgreen;
       font-size:2em;
@@ -47,10 +49,12 @@
 
   <!-- We use Firebase as our backend -->
   <script src='https://cdn.firebase.com/js/client/2.2.1/firebase.js'></script> 
+  <script src="util.js"></script>
   <script src="board.js"></script>
   <script src="draw.js"></script>
   <script src="data.js"></script>
   <script src="demo.js"></script>
+  <script src="setup.js"></script>
   <script src="play.js"></script>
 
   <!-- Load an example board from a pseudo-JSON file, then display it. -->
@@ -81,14 +85,25 @@
     function main() {
       game_id = QueryString.game;
       player_id = QueryString.player;
+      b_ready = document.getElementById("readyButton");
+      b_move = document.getElementById("finishButton");
+      b_topple = document.getElementById("toppleButton");
+      b_reset = document.getElementById("resetButton");
+      t_status = document.getElementById("messageBox");
+      d_setupButtons = document.getElementById("setupButtons");
+      d_playButtons = document.getElementById("playButtons");
+      d_namesBox = document.getElementById("namesBox");
       createBoard();
       if (game_id == null || game_id == "") {
-        SetUp();
-        createGame();
+        setup_Begin();
       } else {
+        d_setupButtons.style.display = "none";
+        if (player_id == null || player_id >= 0) {
+          d_playButtons.style.display = "inline";
+        }
+        play_Begin();
         openGame();
       }
-      play_SetUp();
     }
   </script>
 </head>
@@ -97,14 +112,22 @@
   <!-- The following button and text field are here just for a quick-and-dirty demo -->
   <div id="container">
     <center>
-      <input type="button" id="finishButton" onclick="play_FinishMove()" class="big-btn good" value="Finish move"></input>
-      <input type="button" id="toppleButton" onclick="play_ToppleOrGrow()" class="big-btn disabled" value="Topple / Grow" disabled=true></input>
-      <input type="button" id="resetButton" onclick="play_Reset()" class="big-btn disabled" value="Reset" disabled=true></input><br /><br />
+      <div id="setupButtons">
+        <input type="button" id="readyButton" onclick="setup_SegmentsSelected()" class="big-btn disabled" disabled="true" value="Use this board"></input>
+      </div>
+      <div id="playButtons" style="display:none">
+        <input type="button" id="finishButton" onclick="play_FinishMove()" class="big-btn good" value="Finish move"></input>
+        <input type="button" id="toppleButton" onclick="play_ToppleOrGrow()" class="big-btn disabled" value="Topple / Grow" disabled=true></input>
+        <input type="button" id="resetButton" onclick="play_Reset()" class="big-btn disabled" value="Reset" disabled=true></input>
+      </div>
     </center>
-    <div id="messageBox" class="bordered">
+    <div id="messageBox" class="infoBox bordered">
       Loading game, please wait!
     </div>
-    <canvas id="atlantis" width="1024" height="768" class="bordered">
+    <div id="namesBox" class="infoBox bordered" style="display: none">
+      Here's where you'll enter your friends' names.
+    </div>
+    <canvas id="atlantis" width="1024" height="1024" class="bordered">
       Your browser doesn't support the <i>canvas</i> tag. Get a proper browser.
     </canvas>
   </div>
