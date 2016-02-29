@@ -132,10 +132,12 @@ function play_SetUp() {
 }
 
 function play_FinishMove() {
-  if (play_nextStep()) {
-    // Do the first topple/grow straight away.
-    play_ToppleOrGrow(false);
-  }
+  // Perform the move-step, and progress to play_ToppleOrGrow iff 
+  // there is something to do there. Have the "Finish move" button
+  // disabled for that period.
+  b_move.disabled = true;
+  b_move.className = "big-btn disabled";
+  play_nextStep(false, play_ToppleOrGrow);
 }
 
 function play_ToppleOrGrow() {
@@ -154,7 +156,7 @@ function play_Reset() {
 
 // Returns true if the next step in the turn is a topple or grow, or false if 
 // the turn is finished.
-function play_nextStep(have_grown) {
+function play_nextStep(have_grown, readyForNextStep) {
   // If there are further actions to do in this turn (topple or grow), commit
   // the current board, but not yet the turn. If we've done everything there
   // is to do for this turn, commit the turn.
@@ -163,11 +165,10 @@ function play_nextStep(have_grown) {
   if (!have_grown && (will_topple || has_growing_points)) {
     // The board is guaranteed to change at least one more time. Store the
     // current state, and wait for the player to want to take the next step.
-    CommitBoard();
-    return true;  // Yes, there's more to do.
+    CommitBoard(readyForNextStep);
+    return;
   } 
-  // End of turn.
+  // End of turn. We won't call readyForNextStep().
   CommitTurn();
-  return false;  // Turn is finished.
 }
 

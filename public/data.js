@@ -10,6 +10,8 @@ var connection_retries = 0;
 
 var boardListeners = [];
 
+var writeInProgress = false;
+
 function onBoardChange(func) {
   boardListeners.push(func);
 }
@@ -21,9 +23,13 @@ function clone(obj) {
 function createGame() {
   fb_game = atlantisFirebaseRef.child("games/").push(game);
   game_id = fb_game.key();
+  console.log("Creating game with ID " + game_id);
   fb_turns = atlantisFirebaseRef.child("boards/" + game_id + "/turn_history/");
-  CommitTurn();  // Commits the initial board.
-  listenForMove();
+  CommitTurn(referToGamePage);  // Commits the initial board.
+}
+
+function referToGamePage() {
+  location.href += "?game=" + game_id;  // This will reload the page, getting us to openGame().
 }
 
 // Load an existing game.
@@ -47,15 +53,11 @@ function reloadBoard() {
 }
 
 function listenForMove() {
-  fillURLBox();  // TODO(rjh): for demo purposes only, remove this.
   fb_game.on("value", function(gameSnapshot) {
     game = gameSnapshot.val();
     reloadBoard();
   }, function(errorObject) { 
     console.log("games.on failed: " + errorObject.code)
-    if (connection_retries++ < 1) {
-      setTimeout(listenForMove, 100);  // Try again in 100ms.
-    }
   });
 }
 
@@ -125,21 +127,31 @@ function serializeBoard() {
   }
 }
 
-function commitGame() {
+function commitGame(onComplete) {
+  if (writeInProgress) {
+    var e = new Error("BUG: writes already (still) in progress but new commitGame()");
+    console.log(e.stack);
+  }
+  writeInProgress = true;
   serializeBoard();
   var board_path = game.turn.turn_number + "/board_history/" + game.turn.board_number;
-  fb_turns.child(board_path).set(board);
-  fb_game.child("turn").set(game.turn);
+  fb_turns.child(board_path).set(board, function() {
+    // Only update the game once the board has been written down.
+    fb_game.child("turn").set(game.turn, function() {
+      writeInProgress = false; 
+      if (onComplete !== undefined) onComplete();
+    });
+  });
 }
 
-function CommitBoard() {
+function CommitBoard(onComplete) {
   game.turn.board_number++;
-  commitGame();
+  commitGame(onComplete);
 }
 
-function CommitTurn() {
+function CommitTurn(onComplete) {
   game.turn.turn_number++;
   game.turn.board_number = 0;
-  commitGame();
+  commitGame(onComplete);
 }
 
