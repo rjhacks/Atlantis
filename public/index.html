@@ -2,18 +2,17 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>An Atlantis board</title>
+  <title>Atlantis</title>
   <style type="text/css" title="currentStyle" media="screen">
     #container {
       margin:0px auto;
-      padding:10px;
       text-align:center;
       width:1100px;
     }
     .infoBox {
       margin:10px auto;
-      padding-top:10px;
-      padding-bottom:10px;
+      padding-top:5px;
+      padding-bottom:5px;
       text-align:center;
       background-color:#F7ED8C;
       width:1024px;
@@ -36,6 +35,12 @@
       background-color: lightgreen;
       font-size:2em;
     }
+    .small-btn {
+      width: 50px;
+      height: 100%;
+      background-color: white;
+      font-size:18px;
+    }
     .good {
       background-color: lightgreen;
     }
@@ -45,6 +50,17 @@
     .disabled {
       background-color: lightgray;
     }
+    #buttonRow { 
+      width:100%; 
+      height:100%;
+    }
+    #left, #right, #message {
+      display: inline-block; 
+      *display: inline; 
+      zoom: 1; 
+    }
+    #left, #right { width: 112px; }
+    #message { width: 780px; }
   </style>
 
   <!-- We use Firebase as our backend -->
@@ -88,7 +104,11 @@
       b_move = document.getElementById("finishButton");
       b_topple = document.getElementById("toppleButton");
       b_reset = document.getElementById("resetButton");
-      t_status = document.getElementById("messageBox");
+      b_navFirst = document.getElementById("firstButton");
+      b_navPrev = document.getElementById("prevButton");
+      b_navNext = document.getElementById("nextButton");
+      b_navLast = document.getElementById("lastButton");
+      t_status = document.getElementById("message");
       d_setupButtons = document.getElementById("setupButtons");
       d_playButtons = document.getElementById("playButtons");
       d_namesBox = document.getElementById("namesBox");
@@ -111,16 +131,53 @@
   <div id="container">
     <center>
       <div id="setupButtons">
-        <input type="button" id="readyButton" onclick="setup_SegmentsSelected()" class="big-btn disabled" disabled="true" value="Use this board"></input>
+        <input type="button" 
+               id="readyButton" 
+               onclick="setup_SegmentsSelected()" 
+               class="big-btn disabled" 
+               disabled="true" 
+               value="Use this board">
+        </input>
       </div>
       <div id="playButtons" style="display:none">
-        <input type="button" id="finishButton" onclick="play_FinishMove()" class="big-btn good" value="Finish move"></input>
-        <input type="button" id="toppleButton" onclick="play_ToppleOrGrow()" class="big-btn disabled" value="Topple / Grow" disabled=true></input>
-        <input type="button" id="resetButton" onclick="play_Reset()" class="big-btn disabled" value="Reset" disabled=true></input>
+        <input type="button" 
+               id="finishButton" 
+               onclick="play_FinishMove()" 
+               class="big-btn good" 
+               value="Finish move">
+        </input>
+        <input type="button" 
+               id="toppleButton" 
+               onclick="play_ToppleOrGrow()" 
+               class="big-btn disabled" 
+               value="Topple / Grow" 
+               disabled=true>
+        </input>
+        <input type="button" 
+               id="resetButton" 
+               onclick="play_Reset()" 
+               class="big-btn disabled" 
+               value="Reset" 
+               disabled=true>
+        </input>
       </div>
     </center>
     <div id="messageBox" class="infoBox bordered">
-      Loading game, please wait!
+      <div id="buttonRow">
+        <div id="left">
+          <input type="button" id="firstButton" class="small-btn" value="<<" onclick="showFirstBoard()">
+          </input>
+          <input type="button" id="prevButton" class="small-btn" value="<" onclick="showPreviousBoard()">
+          </input>
+        </div>
+        <div id="message">
+          Loading game, please wait!
+        </div>
+        <div id="right">
+          <input type="button" id="nextButton" class="small-btn" value=">" onclick="showNextBoard()"></input>
+          <input type="button" id="lastButton" class="small-btn" value=">>" onclick="showLastBoard()"></input>
+        </div>
+      </div>
     </div>
     <div id="namesBox" class="infoBox bordered" style="display: none">
       Here's where you'll enter your friends' names.

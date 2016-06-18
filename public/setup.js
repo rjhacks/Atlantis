@@ -47,15 +47,15 @@ function setup_segmentSelectionMouseClicked(e) {
   seg.highlight = seg.highlight ? false : true;
   num_segments_selected += seg.highlight ? 1 : -1;
   if (num_segments_selected >= 4) {
-    enableButton(b_ready, "good");
+    enableBigButton(b_ready, "good");
   } else {
-    disableButton(b_ready);
+    disableBigButton(b_ready);
   }
   redrawBoard();
 }
 
 function setup_SegmentsSelected() {
-  disableButton(b_ready);
+  disableBigButton(b_ready);
   
   // Remove the segments we haven't picked.
   var tmpSegments = allSegments;
@@ -101,15 +101,15 @@ function setup_playerPositionMouseClicked(e) {
     }
   }
   if (num_players_selected >= 2) {
-    enableButton(b_ready, "good");
+    enableBigButton(b_ready, "good");
   } else {
-    disableButton(b_ready);
+    disableBigButton(b_ready);
   }
   redrawBoard();
 }
 
 function setup_PlayerPositionsChosen() {
-  disableButton(b_ready);
+  disableBigButton(b_ready);
   atlantis.style.display = "none";
 
   // Fill the segments with the appropriate towers.
@@ -139,7 +139,7 @@ function setup_NameChanged() {
   for (var i = 0; i < num_players_selected; i++) {
     var name_box = document.getElementById("namesInput_" + i);
     if (name_box.value == "") {
-      disableButton(b_ready);
+      disableBigButton(b_ready);
       return;
     }
     if (i < game.players.length) {
@@ -150,11 +150,11 @@ function setup_NameChanged() {
   }
   // All the names are set!
   game.rules_version = "classic";
-  enableButton(b_ready, "good");
+  enableBigButton(b_ready, "good");
 }
 
 function setup_NamesChosen() {
-  disableButton(b_ready);
+  disableBigButton(b_ready);
   d_namesBox.style.display = "none";
 
   createGame(setup_GameCreated);

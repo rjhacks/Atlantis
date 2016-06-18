@@ -5,6 +5,8 @@ var fb_game = null;
 var fb_boards = null;
 var game = {turn: {turn_number: -1, board_number: -1}, players: []};
 var board = {};
+var current_turn_number = -1;
+var current_board_number = -1;
 
 var connection_retries = 0;
 
@@ -35,6 +37,13 @@ function openGame() {
 }
 
 function reloadBoard() {
+  if (game.turn.turn_number > current_turn_number) {
+    current_turn_number = game.turn.turn_number;
+    current_board_number = game.turn.board_number;
+  } else if (game.turn.turn_number == current_turn_number && 
+             game.turn.board_number > current_board_number) {
+    current_board_number = game.turn.board_number;
+  }
   var board_path = game.turn.turn_number + "/board_history/" + game.turn.board_number;
   fb_turns.child(board_path).once("value", function(boardSnapshot) {
     clearState();
@@ -45,6 +54,54 @@ function reloadBoard() {
     }
     redrawBoard();
   });
+}
+
+function showFirstBoard() {
+  game.turn.turn_number = 0;
+  game.turn.board_number = 0;
+  reloadBoard();
+}
+
+function showPreviousBoard() {
+  if (game.turn.board_number > 0) {
+    game.turn.board_number -= 1;
+    reloadBoard();
+  } else if (game.turn.turn_number > 0) {
+    game.turn.turn_number -= 1;
+    // Find the last board in the previous turn, and go there.
+    var board_history_path = game.turn.turn_number + "/board_history";
+    fb_turns.child(board_history_path).limitToLast(1).once("child_added", function(snapshot) {
+      game.turn.board_number = snapshot.key();
+      reloadBoard();
+    });
+  }
+}
+
+function showNextBoard() {
+  if (game.turn.turn_number == current_turn_number &&
+      game.turn.board_number == current_board_number) {
+    return;
+  }
+
+  // Find the last board in this turn, so we know whether we need to go to the next turn.
+  var board_history_path = game.turn.turn_number + "/board_history";
+  fb_turns.child(board_history_path).limitToLast(1).once("child_added", function(snapshot) {
+    last_turn_board = snapshot.key();
+    if (game.turn.board_number == last_turn_board) {
+      // This was the last board. Go to the next turn.
+      game.turn.turn_number += 1;
+      game.turn.board_number = 0;
+    } else {
+      game.turn.board_number += 1;
+    }
+    reloadBoard();
+  });
+}
+
+function showLastBoard() {
+  game.turn.turn_number = current_turn_number;
+  game.turn.board_number = current_board_number;
+  reloadBoard();
 }
 
 function listenForMove() {

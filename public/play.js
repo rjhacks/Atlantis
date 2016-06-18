@@ -39,7 +39,7 @@ function play_mouseClicked(e) {
 
   if (ApplyMove(play_fromPoint.pos, point.pos, false /* tentative */)) {
     serializeBoard();
-    enableButton(b_reset, "bad");
+    enableBigButton(b_reset, "bad");
   }
   play_fromPoint = null; 
   play_toPoint = null;
@@ -82,19 +82,19 @@ function play_BoardChanged() {
   var topple_msg = player_name + " is toppling.";
   if (player_id != null && player_id != turn_player) {
     // It's a different player's turn.
-    disableButton(b_move);
-    disableButton(b_topple);
-    disableButton(b_reset);
+    disableBigButton(b_move);
+    disableBigButton(b_topple);
+    disableBigButton(b_reset);
   } else {
     // It's our turn, either on a shared screen or not.
     if (is_move_phase) {
-      enableButton(b_move, "good");
-      disableButton(b_topple);
-      disableButton(b_reset);
+      enableBigButton(b_move, "good");
+      disableBigButton(b_topple);
+      disableBigButton(b_reset);
     } else {
-      disableButton(b_move);
-      enableButton(b_topple, "good");
-      disableButton(b_reset);
+      disableBigButton(b_move);
+      enableBigButton(b_topple, "good");
+      disableBigButton(b_reset);
     }
     if (player_id != null) {
       // This screen has one player. Address them as "you".
@@ -102,10 +102,36 @@ function play_BoardChanged() {
       topple_msg = "You're toppling. Press \"Topple / Grow\".";
     }
   }
-  if (is_move_phase) {
-    t_status.innerHTML = move_msg;
+
+  // Determine which navigation buttons should be enabled. Start by assuming all are enabled.
+  enableSmallButton(b_navFirst);
+  enableSmallButton(b_navPrev);
+  enableSmallButton(b_navNext);
+  enableSmallButton(b_navLast);
+  var historical_msg = "";
+  if (game.turn.turn_number == current_turn_number && game.turn.board_number == current_board_number) {
+    // We're looking at the latest board in the game. Leave the play-buttons as they are, but disable
+    // forward turn navigation.
+    disableSmallButton(b_navNext);
+    disableSmallButton(b_navLast);
   } else {
-    t_status.innerHTML = topple_msg; 
+    // We're looking at some historical turn. Disable all play-buttons.
+    disableBigButton(b_move);
+    disableBigButton(b_topple);
+    disableBigButton(b_reset);
+    historical_msg = "Looking back at turn " + game.turn.turn_number +
+                     ", board " + game.turn.board_number + " -- ";
+  }
+  if (game.turn.turn_number == 0 && game.turn.board_number == 0) {
+    // We're looking at the first board in the game. Backwards buttons should be disabled.
+    disableSmallButton(b_navFirst);
+    disableSmallButton(b_navPrev);
+  }
+
+  if (is_move_phase) {
+    t_status.innerHTML = historical_msg + move_msg;
+  } else {
+    t_status.innerHTML = historical_msg + topple_msg;
   }
 }
 
@@ -119,12 +145,12 @@ function play_FinishMove() {
   // Perform the move-step, and progress to play_ToppleOrGrow iff 
   // there is something to do there. Have the "Finish move" button
   // disabled for that period.
-  disableButton(b_move);  // To prevent double-click.
+  disableBigButton(b_move);  // To prevent double-click.
   play_nextStep(false, play_ToppleOrGrow);
 }
 
 function play_ToppleOrGrow() {
-  disableButton(b_topple);  // To prevent double-click.
+  disableBigButton(b_topple);  // To prevent double-click.
   if (PlayerWillTopple(turn_player)) {
     DoOneToppleRound(turn_player);
     play_nextStep(false);
@@ -138,8 +164,6 @@ function play_Reset() {
   reloadBoard();
 }
 
-// Returns true if the next step in the turn is a topple or grow, or false if 
-// the turn is finished.
 function play_nextStep(have_grown, readyForNextStep) {
   // If there are further actions to do in this turn (topple or grow), commit
   // the current board, but not yet the turn. If we've done everything there

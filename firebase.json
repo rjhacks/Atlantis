@@ -1,10 +1,11 @@
 {
-  "firebase": "atlantis-game",
-  "public": "public",
-  "ignore": [
-    "firebase.json",
-    "**/.*",
-    "**/node_modules/**"
-  ],
-  "rules": "rules.json"
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rules": "rules.json"
+  }
 }

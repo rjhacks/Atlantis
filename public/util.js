@@ -28,14 +28,23 @@ function getMouseY(e) {
   return posy;
 }
 
-function disableButton(btn) {
+function disableBigButton(btn) {
   btn.disabled = true;
   btn.className = "big-btn disabled";
 }
 
-function enableButton(btn, style) {
+function enableBigButton(btn, style) {
   btn.disabled = false;
   btn.className = "big-btn " + style;
 }
 
+function disableSmallButton(btn) {
+  btn.disabled = true;
+  btn.className = "small-btn disabled";
+}
+
+function enableSmallButton(btn, style) {
+  btn.disabled = false;
+  btn.className = "small-btn";
+}
 
