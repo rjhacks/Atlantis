@@ -22,18 +22,16 @@ import (
 )
 
 type Tower struct {
-	//*js.Object
-	Player         int  `json:"player"`
+	Player         int  `json:"player"` // -1 for "no tower".
 	Height         int  `json:"height"`
 	IsGrowingPoint bool `json:"is_growing_point"`
 }
 
-func (t *Tower) DebugString() string {
+func (t Tower) DebugString() string {
 	return fmt.Sprintf("player: %v, height: %v, growing: %v", t.Player, t.Height, t.IsGrowingPoint)
 }
 
 type Position struct {
-	//*js.Object
 	X int `json:"x"` //`js:"x"`
 	Y int `json:"y"` //`js:"y"`
 }
@@ -43,45 +41,56 @@ func (pos *Position) DebugString() string {
 }
 
 type Point struct {
-	//*js.Object
 	Position Position
-	tower    *Tower
+	Tower    Tower
 	IsDead   bool
 }
 
-func (p *Point) HasTower() bool {
-	return p.tower != nil && p.tower.Player >= 0
-}
-
-func (p *Point) Tower() *Tower {
-	if !p.HasTower() {
-		p.tower = &Tower{Player: -1, Height: 0, IsGrowingPoint: false}
-	}
-	return p.tower
+func (p Point) HasTower() bool {
+	return p.Tower.Player >= 0
 }
 
 type Segment struct {
-	//*js.Object
-	//Center Position
 	CenterX int `json:"x"` //`js:"center_x" json:"x"`
 	CenterY int `json:"y"` //`js:"center_y" json:"y"`
-	Points  [7]*Point
+	Points  [7]Position
 }
 
-func (s *Segment) DebugString() string {
+func (s Segment) DebugString() string {
 	return fmt.Sprintf("Segment %v,%v", s.CenterX, s.CenterY)
 }
 
+// Attention: use "Copy()" to get a deep copy of a "Board"!
 type Board struct {
-	Segments map[Position]*Segment
+	Segments map[Position]Segment
 	Points   map[Position]*Point
 }
 
-func (b *Board) NewPoint(x int, y int) *Point {
+func (from *Board) DeepCopy() (to Board) {
+	to = *NewBoard()
+	for pos, seg := range from.Segments {
+		// Direct copy is fine, since that happens by value.
+		to.Segments[pos] = seg
+	}
+	for pos, point := range from.Points {
+		// Points are stored as pointers, so a manual deep copy is required.
+		var copiedPoint Point
+		copiedPoint = *point
+		to.Points[pos] = &copiedPoint
+	}
+	return
+}
+
+func (b *Board) NewPoint(x int, y int) Position {
 	var p Point
 	p.Position = Position{X: x, Y: y}
+	p.Tower = Tower{Player: -1}
+	_, pointExists := b.Points[p.Position]
+	if pointExists {
+		panic(fmt.Sprintf("Point at position %v already exists.", p.Position))
+	}
 	b.Points[p.Position] = &p
-	return &p
+	return p.Position
 }
 
 func forEachNeighbour(x int, y int, f func(int, int)) {
@@ -102,13 +111,13 @@ func (b *Board) NewSegment(centerX int, centerY int) {
 	}
 	addPoint(centerX, centerY)
 	forEachNeighbour(centerX, centerY, addPoint)
-	b.Segments[Position{X: centerX, Y: centerY}] = &seg
+	b.Segments[Position{X: centerX, Y: centerY}] = seg
 }
 
 // When serialized to JSON, the format of the board is slightly different than what we use internally.
 // These types and methods fill the gap.
 type serializedTower struct {
-	*Tower
+	Tower
 	Position Position `json:"position"`
 }
 type serializedDeadPoint struct {
@@ -129,7 +138,7 @@ func (b *Board) FromSerializedBoard(sb SerializedBoard) {
 		if !hasPoint {
 			log.Fatal(fmt.Sprintf("FromJSON: Missing point %v,%v", t.Position.X, t.Position.Y))
 		}
-		*point.Tower() = *t.Tower
+		point.Tower = t.Tower
 	}
 	for _, d := range sb.DeadPoints {
 		point, hasPoint := b.Points[d.Position]
@@ -160,7 +169,7 @@ func (b *Board) ToSerializedBoard() SerializedBoard {
 	}
 	for _, point := range b.Points {
 		if point.HasTower() {
-			sb.Towers = append(sb.Towers, serializedTower{Tower: point.Tower(), Position: point.Position})
+			sb.Towers = append(sb.Towers, serializedTower{Tower: point.Tower, Position: point.Position})
 		}
 		if point.IsDead {
 			sb.DeadPoints = append(sb.DeadPoints, serializedDeadPoint{Position: point.Position})
@@ -182,11 +191,12 @@ func (b *Board) DebugString() string {
 	for _, seg := range b.Segments {
 		// TODO(rjhacks): concat can be done more efficiently.
 		out += fmt.Sprintf("Segment %v,%v has %v points\n", seg.CenterX, seg.CenterY, len(seg.Points))
-		for _, p := range seg.Points {
+		for _, ppos := range seg.Points {
+			p := b.Points[ppos]
 			if !p.HasTower() {
 				continue
 			}
-			t := p.Tower()
+			t := p.Tower
 			out += "- Tower at " + p.Position.DebugString() + ": " + t.DebugString() + "\n"
 		}
 	}
@@ -194,7 +204,7 @@ func (b *Board) DebugString() string {
 }
 
 func (b *Board) Clear() {
-	b.Segments = make(map[Position]*Segment)
+	b.Segments = make(map[Position]Segment)
 	b.Points = make(map[Position]*Point)
 }
 

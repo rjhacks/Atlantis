@@ -14,14 +14,14 @@ const kGameURLPrefix = "https://atlantis-game.firebaseapp.com/?game="
 type Player struct {
 	Name string `json:"name"`
 }
-type Turn struct {
+type SerializedTurn struct {
 	TurnNumber  int `json:"turn_number"`
 	BoardNumber int `json:"board_number"`
 }
 type SerializedGame struct {
-	Players      []Player `json:"players"`
-	RulesVersion string   `json:"rules_version"`
-	Turn         Turn     `json:"turn"`
+	Players      []Player       `json:"players"`
+	RulesVersion string         `json:"rules_version"`
+	Turn         SerializedTurn `json:"turn"`
 }
 
 // Users can mock out 'DB' and 'Game' for testing.
@@ -94,7 +94,7 @@ func (g *firebaseGame) NextTurn(b *Board) {
 
 func (fb *firebaseDB) CreateGame(players []Player, rulesVersion string, firstBoard *Board) Game {
 	g := new(firebaseGame)
-	g.data = SerializedGame{Players: players, RulesVersion: rulesVersion, Turn: Turn{-1, -1}}
+	g.data = SerializedGame{Players: players, RulesVersion: rulesVersion, Turn: SerializedTurn{-1, -1}}
 	pushed_game, err := fb.games.Push(g.data, nil)
 	if err != nil {
 		log.Fatal("While creating game in Firebase: %v\n", err)

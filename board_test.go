@@ -1,6 +1,7 @@
 package atlantis
 
 import (
+	//	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -10,16 +11,16 @@ func TestCreateBoard(t *testing.T) {
 
 	b := NewBoard()
 	b.NewSegment(0, 0)
-	assert.Equal(len(b.Segments), 1)
-	assert.Equal(len(b.Points), 7)
+	assert.Equal(1, len(b.Segments))
+	assert.Equal(7, len(b.Points))
 	b.NewSegment(3, 1)
-	assert.Equal(len(b.Segments), 2)
-	assert.Equal(len(b.Points), 2*7)
+	assert.Equal(2, len(b.Segments))
+	assert.Equal(2*7, len(b.Points))
 }
 
 func TestCreateBoardFromJSON(t *testing.T) {
 	assert := assert.New(t)
-	assert.NotEqual(serializedBoard, "")
+	assert.NotEqual("", serializedBoard)
 
 	b := NewBoard()
 	b.FromJSON(serializedBoard)
@@ -39,46 +40,46 @@ func TestFromToJSON(t *testing.T) {
 }
 
 func VerifyDeserializedBoard(b *Board, assert *assert.Assertions) {
-	assert.Equal(len(b.Segments), 4)
-	assert.Equal(len(b.Points), 4*7)
+	assert.Equal(4, len(b.Segments))
+	assert.Equal(4*7, len(b.Points))
 
 	pos := Position{X: 6, Y: 6}
-	assert.Equal(b.Points[pos].Position, pos)
-	assert.Equal(b.Points[pos].IsDead, false)
-	assert.Equal(b.Points[pos].Tower().Player, 0)
-	assert.Equal(b.Points[pos].Tower().Height, 1)
-	assert.Equal(b.Points[pos].Tower().IsGrowingPoint, false)
+	assert.Equal(pos, b.Points[pos].Position)
+	assert.Equal(false, b.Points[pos].IsDead)
+	assert.Equal(0, b.Points[pos].Tower.Player)
+	assert.Equal(1, b.Points[pos].Tower.Height)
+	assert.Equal(false, b.Points[pos].Tower.IsGrowingPoint)
 
 	pos = Position{X: 7, Y: 7}
-	assert.Equal(b.Points[pos].Position, pos)
-	assert.Equal(b.Points[pos].IsDead, false)
-	assert.Equal(b.Points[pos].Tower().Player, 0)
-	assert.Equal(b.Points[pos].Tower().Height, 2)
-	assert.Equal(b.Points[pos].Tower().IsGrowingPoint, true)
+	assert.Equal(pos, b.Points[pos].Position)
+	assert.Equal(false, b.Points[pos].IsDead)
+	assert.Equal(0, b.Points[pos].Tower.Player)
+	assert.Equal(2, b.Points[pos].Tower.Height)
+	assert.Equal(true, b.Points[pos].Tower.IsGrowingPoint)
 
 	pos = Position{X: 10, Y: 5}
-	assert.Equal(b.Points[pos].Position, pos)
-	assert.Equal(b.Points[pos].IsDead, false)
-	assert.Equal(b.Points[pos].Tower().Player, 1)
-	assert.Equal(b.Points[pos].Tower().Height, 1)
-	assert.Equal(b.Points[pos].Tower().IsGrowingPoint, false)
+	assert.Equal(pos, b.Points[pos].Position)
+	assert.Equal(false, b.Points[pos].IsDead)
+	assert.Equal(1, b.Points[pos].Tower.Player)
+	assert.Equal(1, b.Points[pos].Tower.Height)
+	assert.Equal(false, b.Points[pos].Tower.IsGrowingPoint)
 
 	pos = Position{X: 11, Y: 6}
-	assert.Equal(b.Points[pos].Position, pos)
-	assert.Equal(b.Points[pos].IsDead, false)
-	assert.Equal(b.Points[pos].Tower().Player, 1)
-	assert.Equal(b.Points[pos].Tower().Height, 2)
-	assert.Equal(b.Points[pos].Tower().IsGrowingPoint, true)
+	assert.Equal(pos, b.Points[pos].Position)
+	assert.Equal(false, b.Points[pos].IsDead)
+	assert.Equal(1, b.Points[pos].Tower.Player)
+	assert.Equal(2, b.Points[pos].Tower.Height)
+	assert.Equal(true, b.Points[pos].Tower.IsGrowingPoint)
 
 	pos = Position{X: 8, Y: 5}
-	assert.Equal(b.Points[pos].Position, pos)
-	assert.Equal(b.Points[pos].IsDead, true)
+	assert.Equal(pos, b.Points[pos].Position)
+	assert.Equal(true, b.Points[pos].IsDead)
 
 	pos = Position{X: 10, Y: 8}
-	assert.Equal(b.Points[pos].Position, pos)
-	assert.Equal(b.Points[pos].IsDead, true)
+	assert.Equal(pos, b.Points[pos].Position)
+	assert.Equal(true, b.Points[pos].IsDead)
 
-	assert.NotEqual(b.DebugString(), "")
+	assert.NotEqual("", b.DebugString())
 }
 
 var serializedBoard = `{
