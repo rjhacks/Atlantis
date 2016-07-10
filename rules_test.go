@@ -3,12 +3,12 @@ package atlantis
 import (
 	"github.com/stretchr/testify/assert"
 	//	"log"
+	"fmt"
 	"testing"
 )
 
 func TestMoves(test *testing.T) {
 	assert := assert.New(test)
-	assert.NotEqual(serializedBoard, "")
 
 	b := NewBoard()
 	b.FromJSON(simpleBoard)
@@ -88,7 +88,6 @@ func TestMoves(test *testing.T) {
 
 func TestToppleAndGrow(test *testing.T) {
 	assert := assert.New(test)
-	assert.NotEqual(serializedBoard, "")
 
 	b := NewBoard()
 	b.FromJSON(simpleBoard)
@@ -151,6 +150,77 @@ func TestToppleAndGrow(test *testing.T) {
 	assert.Equal(Tower{Player: 0, Height: 1}, b2.Points[Position{-1, -1}].Tower)
 	assert.Equal(Tower{Player: 0, Height: 2}, b2.Points[Position{0, 0}].Tower)
 	assert.Equal(Tower{Player: 0, Height: 1}, b2.Points[Position{1, 1}].Tower)
+}
+
+func TestEveryMove(test *testing.T) {
+	assert := assert.New(test)
+
+	b := NewBoard()
+	b.NewSegment(0, 0)
+
+	// A board with no towers on it has only one possible move: do nothing.
+	countPlayerMoves := func(player int) int {
+		m := make(map[string]Turn)
+		addToMap := func(t Turn) {
+			s := fmt.Sprintf("%#v", t)
+			_, hasTurn := m[s]
+			assert.False(hasTurn, "Already have turn: "+s)
+			m[s] = t
+		}
+		ForEveryPossibleTurn(b, player, addToMap)
+		return len(m)
+	}
+	countMoves := func() int { return countPlayerMoves(0) }
+	assert.Equal(1, countMoves())
+
+	// A board with one tower in the middle of one segment has 7 possible moves.
+	b.Points[Position{0, 0}].Tower = Tower{Player: 0, Height: 1}
+	assert.Equal(7, countMoves())
+
+	// A different player with no blocks won't have any moves though.
+	assert.Equal(1, countPlayerMoves(1))
+
+	// Ditto if the tower is 2 blocks high, because it won't be able to move both blocks.
+	b.Points[Position{0, 0}].Tower.Height = 2
+	assert.Equal(7, countMoves())
+	assert.Equal(1, countPlayerMoves(1))
+
+	// A board with one tower on the edge of one segment has fewer degrees of freedom.
+	b.Points[Position{0, 0}].Tower = Tower{Player: -1}
+	b.Points[Position{-1, -1}].Tower = Tower{Player: 0, Height: 1}
+	assert.Equal(4, countMoves())
+
+	// A tower of two in that corner can move to the opposite corner as well.
+	b.Points[Position{-1, -1}].Tower.Height = 2
+	assert.Equal(5, countMoves())
+
+	// If there are two towers, their number of moves are added. However, the "no move" counts only once.
+	b.Points[Position{1, 0}].Tower = Tower{Player: 0, Height: 2}
+	assert.Equal(4+4+1, countMoves())
+
+	// Adding a segment increases the movement options for the tower at 1,0.
+	b.NewSegment(3, 1)
+	assert.Equal(4+8+1, countMoves())
+
+	// If there's a tower on the other segment its options multiply with the first segment.
+	b.Points[Position{3, 0}].Tower = Tower{Player: 0, Height: 1}
+	assert.Equal((4+8+1)*4, countMoves())
+
+	// Different players still ignore each others' towers in the movement options.
+	b.Points[Position{3, 0}].Tower.Player = 1
+	assert.Equal(4+8+1, countPlayerMoves(0))
+	assert.Equal(4, countPlayerMoves(1))
+
+	// Growing points can't be moved onto or across, and impede movement.
+	b.Points[Position{2, 0}].Tower = Tower{Player: 1, Height: 1, IsGrowingPoint: true}
+	assert.Equal(4+6+1, countPlayerMoves(0))
+	assert.Equal(3, countPlayerMoves(1))
+
+	// As do dead points.
+	b.Points[Position{2, 0}].Tower = Tower{Player: -1}
+	b.Points[Position{2, 0}].IsDead = true
+	assert.Equal(4+6+1, countPlayerMoves(0))
+	assert.Equal(3, countPlayerMoves(1))
 }
 
 var simpleBoard = `{

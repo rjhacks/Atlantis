@@ -1,20 +1,24 @@
 package atlantis
 
-import (
-	"fmt"
-	"log"
-	"strconv"
-	//"math"
-)
+import ()
 
 type Move struct {
 	From Position
 	To   Position
 }
 
+// Attention: not safe to copy; the map doesn't deep-copy. Use DeepCopy().
 type Turn struct {
 	// Maps: segment center position -> move from that segment.
 	Moves map[Position]Move
+}
+
+func (t1 Turn) DeepCopy() (t2 Turn) {
+	t2 = MakeTurn()
+	for pos, m := range t1.Moves {
+		t2.Moves[pos] = m
+	}
+	return
 }
 
 func MakeTurn() (t Turn) {
@@ -88,7 +92,6 @@ func isLegalMove(b *Board, from Position, to Position) (legal bool, path []*Poin
 	fromPoint, fromPointExists := b.Points[from]
 	toPoint, toPointExists := b.Points[to]
 	if !fromPointExists || !toPointExists {
-		log.Println("From or to point does not exist")
 		return
 	}
 
@@ -96,19 +99,15 @@ func isLegalMove(b *Board, from Position, to Position) (legal bool, path []*Poin
 	xdist := toPoint.Position.X - fromPoint.Position.X
 	ydist := toPoint.Position.Y - fromPoint.Position.Y
 	if xdist == 0 && ydist == 0 { // At least X or Y needs to move.
-		log.Println("Neither X nor Y moves")
 		return
 	}
 	if xdist != 0 && ydist != 0 && xdist != ydist { // If X and Y both move, then in the same way.
-		log.Println("X and Y don't move the same way")
 		return
 	}
 	dist := max(abs(xdist), abs(ydist))
 
 	// There must be enough blocks on the source point to reach the end point.
 	if !fromPoint.HasTower() || fromPoint.Tower.Height < dist {
-		fmt.Println(fromPoint)
-		log.Println("There are not enough blocks on the source point")
 		return
 	}
 	// TODO(rjhacks): Ensure that the blocks on this point haven't moved yet this turn.
@@ -122,7 +121,6 @@ func isLegalMove(b *Board, from Position, to Position) (legal bool, path []*Poin
 	for i := 0; i <= dist; i++ {
 		p, pExists := b.Points[Position{X: x, Y: y}]
 		if !pExists || p.IsDead || (p.HasTower() && p.Tower.IsGrowingPoint) {
-			log.Println("A point on the way is non-existent/dead, or a growing point")
 			return
 		}
 		path[i] = p
@@ -136,13 +134,11 @@ func isLegalMove(b *Board, from Position, to Position) (legal bool, path []*Poin
 func applyMove(b *Board, from Position, to Position) bool {
 	legal, path := isLegalMove(b, from, to)
 	if !legal {
-		log.Println("Move not legal")
 		return false
 	}
 	var fromPoint, toPoint *Point
 	fromPoint = path[0]
 	toPoint = path[len(path)-1]
-	log.Println("Moving blocks to point " + strconv.Itoa(toPoint.Position.X) + "," + strconv.Itoa(toPoint.Position.Y))
 
 	// We now know the move is legal. Step down the path, annihilating blocks as required.
 	numBlocks := len(path) - 1
@@ -169,8 +165,6 @@ func applyMove(b *Board, from Position, to Position) bool {
 		toPoint.Tower = Tower{Player: player}
 	}
 	toPoint.Tower.Height += numBlocks
-	fmt.Printf("Incremented the height of the tower to %v\n", toPoint.Tower.Height)
-
 	return true
 }
 
@@ -242,4 +236,74 @@ func doTopple(b *Board, player int) bool {
 		}
 	}
 	return len(toTopple) > 0
+}
+
+func recursiveSegment(b *Board, player int, segs []Position, i int, f func(Turn), t Turn) {
+	if i == len(segs) {
+		// Base condition: we've picked a move for every segment.
+		f(t)
+		return
+	}
+	// Recursive condition: we have another segment to pick a move for.
+	seg := segs[i]
+	doNextSeg := func(t Turn) {
+		recursiveSegment(b, player, segs, i+1, f, t)
+	}
+	forEverySegmentMove(b, player, seg, t, doNextSeg)
+}
+
+// Calls 'f' with every possible turn that 'player' could have now on 'b'.
+func ForEveryPossibleTurn(b *Board, player int, f func(Turn)) {
+	segs := make([]Position, len(b.Segments))
+	{
+		i := 0
+		for pos, _ := range b.Segments {
+			segs[i] = pos
+			i++
+		}
+	}
+	recursiveSegment(b, player, segs, 0, f, MakeTurn())
+}
+
+// Calls 'f' once for every possible move from 'segment', with that move added to 't'.
+func forEverySegmentMove(b *Board, player int, centerPos Position, t Turn, f func(Turn)) {
+	// Handle the possibility of not moving on this segment.
+	f(t)
+
+	// Generate every move possible from this segment.
+	handlePossibleMove := func(m Move) {
+		t.Moves[centerPos] = m
+		f(t)
+		delete(t.Moves, centerPos)
+	}
+	generatePossibleMoves := func(x, y int) {
+		forEveryPointMove(b, player, b.Points[Position{x, y}], handlePossibleMove)
+	}
+	generatePossibleMoves(centerPos.X, centerPos.Y)
+	forEachNeighbour(centerPos.X, centerPos.Y, generatePossibleMoves)
+}
+
+func forEveryPointMove(b *Board, player int, p *Point, f func(Move)) {
+	if p.IsDead || !p.HasTower() || p.Tower.IsGrowingPoint || p.Tower.Player != player {
+		return
+	}
+	recordPossibleMove := func(x, y int) bool { // Returns true if move was legal.
+		toPos := Position{x, y}
+		to, exists := b.Points[toPos]
+		if !exists || to.IsDead || (to.HasTower() && to.Tower.IsGrowingPoint) {
+			// Not a valid move.
+			return false
+		}
+		// Valid move.
+		f(Move{From: p.Position, To: toPos})
+		return true
+	}
+	forEachNeighbour(0, 0, func(x, y int) { // Gives us just (1,0), (0,-1), etc.
+		// Trace all moves in this direction, stopping as soon as the moves on this line become illegal.
+		for dist := 1; dist <= p.Tower.Height; dist++ {
+			if !recordPossibleMove(p.Position.X+(x*dist), p.Position.Y+(y*dist)) {
+				break
+			}
+		}
+	})
 }
