@@ -11,7 +11,7 @@ import (
 const kGameURLPrefix = "https://atlantis-game.firebaseapp.com/?game="
 
 // Data structures that match our Firebase schema's representation of a game.
-type Player struct {
+type PlayerInfo struct {
 	Name string `json:"name"`
 }
 type SerializedTurn struct {
@@ -19,14 +19,14 @@ type SerializedTurn struct {
 	BoardNumber int `json:"board_number"`
 }
 type SerializedGame struct {
-	Players      []Player       `json:"players"`
+	Players      []PlayerInfo   `json:"players"`
 	RulesVersion string         `json:"rules_version"`
 	Turn         SerializedTurn `json:"turn"`
 }
 
 // Users can mock out 'DB' and 'Game' for testing.
 type DB interface {
-	CreateGame(players []Player, rulesVersion string, firstBoard *Board) Game
+	CreateGame(players []PlayerInfo, rulesVersion string, firstBoard *Board) Game
 }
 type Game interface {
 	AddBoard(b *Board)
@@ -92,7 +92,7 @@ func (g *firebaseGame) NextTurn(b *Board) {
 	g.AddBoard(b)
 }
 
-func (fb *firebaseDB) CreateGame(players []Player, rulesVersion string, firstBoard *Board) Game {
+func (fb *firebaseDB) CreateGame(players []PlayerInfo, rulesVersion string, firstBoard *Board) Game {
 	g := new(firebaseGame)
 	g.data = SerializedGame{Players: players, RulesVersion: rulesVersion, Turn: SerializedTurn{-1, -1}}
 	pushed_game, err := fb.games.Push(g.data, nil)

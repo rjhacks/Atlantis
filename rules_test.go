@@ -1,9 +1,8 @@
 package atlantis
 
 import (
-	"github.com/stretchr/testify/assert"
-	//	"log"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 

@@ -8,7 +8,7 @@ func TestFireBaseCreateGame(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping test: Firebase test uses external resources.")
 	}
-	players := []Player{Player{Name: "Red"}, Player{Name: "Blue"}}
+	players := []PlayerInfo{PlayerInfo{Name: "Red"}, PlayerInfo{Name: "Blue"}}
 	rulesVersion := "classic"
 	db := MakeFirebaseDB()
 

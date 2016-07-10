@@ -335,9 +335,6 @@ func ForEveryPossibleTurn(b *Board, player int, f func(Turn)) {
 
 // Calls 'f' once for every possible move from 'segment', with that move added to 't'.
 func forEverySegmentMove(b *Board, player int, centerPos Position, t Turn, f func(Turn)) {
-	// Handle the possibility of not moving on this segment.
-	f(t)
-
 	// Generate every move possible from this segment.
 	handlePossibleMove := func(m Move) {
 		t.Moves[centerPos] = m
@@ -349,6 +346,10 @@ func forEverySegmentMove(b *Board, player int, centerPos Position, t Turn, f fun
 	}
 	generatePossibleMoves(centerPos.X, centerPos.Y)
 	forEachNeighbour(centerPos.X, centerPos.Y, generatePossibleMoves)
+
+	// Handle the possibility of not moving on this segment. Do this last, so players can have a
+	// bias towards action by sticking to their earlier decisions when tied.
+	f(t)
 }
 
 func forEveryPointMove(b *Board, player int, p *Point, f func(Move)) {
