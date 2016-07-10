@@ -1,6 +1,8 @@
 package atlantis
 
-import ()
+import (
+//"fmt"
+)
 
 type Move struct {
 	From Position
@@ -27,7 +29,7 @@ func MakeTurn() (t Turn) {
 }
 
 // Returns true if the turn consisted only of legal moves, and returns the board as it stands at
-// the end of the turn. Does not modify 'from'.
+// the end of the turn. Does not do toppling or growing. Does not modify 'from'.
 func DoMoves(from *Board, t Turn) (bool, *Board) {
 	b := from.DeepCopy()
 	for _, move := range t.Moves {
@@ -52,6 +54,72 @@ func DoAllTopplesAndGrow(b *Board, player int) bool {
 		}
 	}
 	return numTopples > 0 || numGrows > 0
+}
+
+// Returns true iff the game on board 'b' has reached an end-condition.
+func IsGameFinished(b *Board) bool {
+	// The game if finished if none of the players' blocks have a way of reaching any other players' blocks,
+	// AND there are no more growing points on the board.
+	//
+	// Basically, we conduct a breadth-first search from every tower on the board, to see if it can reach
+	// any towers owned by other players. We use a few optimizations to make sure we never visit the same
+	// point twice, keeping the algorithm linear in time.
+	points := make(map[Position]int)           // Maps: point to reachable player.
+	unexploredTowers := make(map[Position]int) // Maps: tower position to owning player.
+	for pos, point := range b.Points {
+		if point.IsDead {
+			// Pretend dead points just don't exist.
+			continue
+		}
+		points[pos] = point.Tower.Player // -1 if no tower.
+		if point.HasTower() {
+			if point.Tower.IsGrowingPoint {
+				// The game is never done as long as there are any growing points.
+				//fmt.Printf("Position %v is a growing point.\n", pos)
+				return false
+			}
+			unexploredTowers[pos] = point.Tower.Player
+		}
+	}
+
+	// Breadth-first search from unexplored towers.
+	for towerPos, player := range unexploredTowers {
+		//fmt.Printf("Starting from tower %v\n", towerPos)
+		// The slice 'nextPoints' will eventually contain all the points reachable from 'towerPos'.
+		nextPoints := make([]Position, 1, len(b.Points))
+		nextPoints[0] = towerPos
+		fillNextPoints := func(x, y int) {
+			// If 'owningPlayer' is -1, this point is completely unseen. If it's -2, it's already queued.
+			// Any other value indicates the point is owned by that player.
+			owningPlayer, exists := points[Position{x, y}]
+			if exists && owningPlayer != -2 && owningPlayer != player {
+				if owningPlayer == -1 {
+					// Mark this point as already queued, so we don't queue it again.
+					points[Position{x, y}] = -2
+				}
+				nextPoints = append(nextPoints, Position{x, y})
+			}
+		}
+
+		for i := 0; i < len(nextPoints); i++ {
+			pos := nextPoints[i]
+			//fmt.Printf("Depth-first search considering %v: %v...\n", i, pos)
+			owningPlayer, _ := points[pos]
+			if owningPlayer == -2 || i == 0 {
+				points[pos] = player
+				forEachNeighbour(pos.X, pos.Y, fillNextPoints)
+			} else {
+				// The owning player can't be 'player', since else the point would not appear in this position
+				// of the list of next points.
+				return false // A different player can be reached; the game is not finished.
+			}
+			// If this were a tower, we've explored it now.
+			delete(unexploredTowers, pos)
+		}
+	}
+
+	// None of the players can reach any of the other player! The game is finished!
+	return true
 }
 
 func max(a int, b int) int {

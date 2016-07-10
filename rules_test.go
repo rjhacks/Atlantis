@@ -223,6 +223,44 @@ func TestEveryMove(test *testing.T) {
 	assert.Equal(3, countPlayerMoves(1))
 }
 
+func TestIsGameFinished(test *testing.T) {
+	assert := assert.New(test)
+
+	b := NewBoard()
+
+	// A board with no segments is a finished game.
+	assert.True(IsGameFinished(b))
+
+	// A board with no players on it is a finished game.
+	b.NewSegment(0, 0)
+	assert.True(IsGameFinished(b))
+
+	// A board with only a single player on it constitutes a finished game.
+	b.Points[Position{-1, -1}].Tower = Tower{Player: 0, Height: 1}
+	assert.True(IsGameFinished(b))
+
+	// But with two players present the game is not finished.
+	b.Points[Position{1, 1}].Tower = Tower{Player: 1, Height: 1}
+	assert.False(IsGameFinished(b))
+
+	// Also not if they're almost separated.
+	b.Points[Position{0, 0}].IsDead = true
+	b.Points[Position{0, 1}].IsDead = true
+	assert.False(IsGameFinished(b))
+
+	// Also not if they're separated but the thing separating them is a growing point.
+	b.Points[Position{0, -1}].Tower = Tower{Player: 1, Height: 1, IsGrowingPoint: true}
+	assert.False(IsGameFinished(b))
+
+	// Also not if completely separated by dead points but there is still a growing point in play.
+	b.Points[Position{1, 0}].IsDead = true
+	assert.False(IsGameFinished(b))
+
+	// But yes again if they're completely separated and there's no growing points.
+	b.Points[Position{0, -1}].Tower = Tower{Player: -1}
+	assert.True(IsGameFinished(b))
+}
+
 var simpleBoard = `{
   "segments" : [ {
     "x" : 0,
