@@ -62,7 +62,7 @@ function play_american_mouseClicked(point, e) {
   AddBlocksToTower(point, turn_player, 1);
   serializeBoard();
   buffered_blocks_to_place = -1;
-  play_BoardChanged();
+  play_UpdateMessage();
   enableBigButton(b_reset, "bad");
   redrawBoard();
 }
@@ -171,11 +171,6 @@ function play_BoardChanged() {
   turn_player = game.turn.turn_number % game.players.length;
   var is_move_phase = game.turn.board_number == 0;
   player_name = game.players[turn_player].name;
-  var color_msg = "(playing <font color=\"" + colors[turn_player] + "\">"
-                  + colors[turn_player] + "</font>).";
-  var move_msg1 = "It's " + player_name + "'s turn " + color_msg;
-  var move_msg2 = "";
-  var topple_msg = player_name + " is toppling.";
   if (player_id != null && player_id != turn_player) {
     // It's a different player's turn.
     disableBigButton(b_move);
@@ -183,7 +178,6 @@ function play_BoardChanged() {
     disableBigButton(b_reset);
   } else {
     // It's our turn, either on a shared screen or not.
-    move_msg2 = "<br/>Press \"Finish move\" when you're done.";
     if (is_move_phase) {
       enableBigButton(b_move, "good");
       disableBigButton(b_topple);
@@ -193,6 +187,47 @@ function play_BoardChanged() {
       enableBigButton(b_topple, "good");
       disableBigButton(b_reset);
     }
+  }
+
+  // Determine which navigation buttons should be enabled. Start by assuming all are enabled.
+  enableSmallButton(b_navFirst);
+  enableSmallButton(b_navPrev);
+  enableSmallButton(b_navNext);
+  enableSmallButton(b_navLast);
+  if (game.turn.turn_number == current_turn_number && game.turn.board_number == current_board_number) {
+    // We're looking at the latest board in the game. Leave the play-buttons as they are, but disable
+    // forward turn navigation.
+    disableSmallButton(b_navNext);
+    disableSmallButton(b_navLast);
+  } else {
+    // We're looking at some historical turn. Disable all play-buttons.
+    disableBigButton(b_move);
+    disableBigButton(b_topple);
+    disableBigButton(b_reset);
+  }
+  if (game.turn.turn_number == 0 && game.turn.board_number == 0) {
+    // We're looking at the first board in the game. Backwards buttons should be disabled.
+    disableSmallButton(b_navFirst);
+    disableSmallButton(b_navPrev);
+  }
+  play_UpdateMessage();
+
+  if (player_id == turn_player && game.turn.board_number == 0) {
+    // Users are playing on different screens. Let the user know that it became their turn.
+    PlayNotificationSound();
+  }
+}
+
+function play_UpdateMessage() {
+  var is_move_phase = game.turn.board_number == 0;
+  var color_msg = "(playing <font color=\"" + colors[turn_player] + "\">"
+                  + colors[turn_player] + "</font>).";
+  var move_msg1 = "It's " + player_name + "'s turn " + color_msg;
+  var move_msg2 = "";
+  var topple_msg = player_name + " is toppling.";
+  if (player_id == null || player_id == turn_player) {
+    // It's our turn, either on a shared screen or not.
+    move_msg2 = "<br/>Press \"Finish move\" when you're done.";
     if (player_id != null) {
       // This screen has one player. Address them as "you".
       move_msg1 = "It's your turn to move " + color_msg;
@@ -215,30 +250,12 @@ function play_BoardChanged() {
     highlightHomeSegments = false;
   }
 
-  // Determine which navigation buttons should be enabled. Start by assuming all are enabled.
-  enableSmallButton(b_navFirst);
-  enableSmallButton(b_navPrev);
-  enableSmallButton(b_navNext);
-  enableSmallButton(b_navLast);
   var historical_msg = "";
-  if (game.turn.turn_number == current_turn_number && game.turn.board_number == current_board_number) {
-    // We're looking at the latest board in the game. Leave the play-buttons as they are, but disable
-    // forward turn navigation.
-    disableSmallButton(b_navNext);
-    disableSmallButton(b_navLast);
-  } else {
-    // We're looking at some historical turn. Disable all play-buttons.
-    disableBigButton(b_move);
-    disableBigButton(b_topple);
-    disableBigButton(b_reset);
+  if (game.turn.turn_number != current_turn_number || game.turn.board_number != current_board_number) {
+    // We're looking at some historical turn.
     historical_msg = "Looking back at turn " + game.turn.turn_number +
                      ", board " + game.turn.board_number + " -- ";
     move_msg2 = "";
-  }
-  if (game.turn.turn_number == 0 && game.turn.board_number == 0) {
-    // We're looking at the first board in the game. Backwards buttons should be disabled.
-    disableSmallButton(b_navFirst);
-    disableSmallButton(b_navPrev);
   }
 
   if (is_move_phase) {

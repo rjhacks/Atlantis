@@ -48,3 +48,7 @@ function enableSmallButton(btn, style) {
   btn.className = "small-btn";
 }
 
+function PlayNotificationSound() {
+  var sound = document.getElementById("sound1");
+  sound.play();
+}
