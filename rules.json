@@ -32,11 +32,15 @@
           ".write":"((((newData.parent().val()==null||newData.parent().child('turn').exists())&&(!newData.exists()||newData.hasChildren())&&newData.parent().exists()&&!data.parent().exists())))",
           ".read":"((root.child('games').child($game_id).exists()))",
           "$player_id": {
-            ".write":"((((newData.parent().parent().val()==null||newData.parent().parent().child('turn').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('name').exists())&&(!newData.child('name').exists()||newData.child('name').isString())&&newData.parent().parent().exists()&&!data.parent().parent().exists())))",
-            ".validate":"((((newData.parent().parent().val()==null||newData.parent().parent().child('turn').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('name').exists())&&(!newData.child('name').exists()||newData.child('name').isString())&&newData.parent().parent().exists()&&!data.parent().parent().exists())))",
+            ".write":"((((newData.parent().parent().val()==null||newData.parent().parent().child('turn').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('name').exists())&&(!newData.child('name').exists()||newData.child('name').isString())&&(!newData.child('home_segment').exists()||newData.child('home_segment').hasChildren())&&newData.parent().parent().exists()&&!data.parent().parent().exists())))",
+            ".validate":"((((newData.parent().parent().val()==null||newData.parent().parent().child('turn').exists())&&(!newData.exists()||newData.hasChildren())&&(newData.val()==null||newData.child('name').exists())&&(!newData.child('name').exists()||newData.child('name').isString())&&(!newData.child('home_segment').exists()||newData.child('home_segment').hasChildren())&&newData.parent().parent().exists()&&!data.parent().parent().exists())))",
             ".read":"((root.child('games').child($game_id).exists()))",
             "name": {
               ".write":"((((newData.parent().parent().parent().val()==null||newData.parent().parent().parent().child('turn').exists())&&(newData.parent().val()==null||newData.parent().child('name').exists())&&(!newData.exists()||newData.isString())&&newData.parent().parent().parent().exists()&&!data.parent().parent().parent().exists())))",
+              ".read":"((root.child('games').child($game_id).exists()))"
+            },
+            "home_segment": {
+              ".write":"((((newData.parent().parent().parent().val()==null||newData.parent().parent().parent().child('turn').exists())&&(newData.parent().val()==null||newData.parent().child('name').exists())&&(!newData.exists()||newData.hasChildren())&&newData.parent().parent().parent().exists()&&!data.parent().parent().parent().exists())))",
               ".read":"((root.child('games').child($game_id).exists()))"
             },
             "$other":{".validate":"false"}

@@ -213,7 +213,7 @@ function ApplyMove(fromPos, toPos, tentative) {
   if (toPoint == null || toPoint.is_dead) return false;
   if (toPoint.tower != null && toPoint.tower.is_growing_point) return false;
 
-  // Legal moves either change only x and y coordinates, or change x and y in the same way.
+  // Legal moves either change only x or y coordinates, or change x and y in the same way.
   var posDelta = new Position(toPos.x - fromPos.x, toPos.y - fromPos.y);
   var xStep = posDelta.x != 0 ? (posDelta.x > 0 ? 1 : -1) : 0;
   var yStep = posDelta.y != 0 ? (posDelta.y > 0 ? 1 : -1) : 0;
@@ -278,3 +278,14 @@ function ApplyMove(fromPos, toPos, tentative) {
   return true;
 }
 
+function CountBlocksForPlayer(seg_center_x, seg_center_y, player_id) {
+  seg = getSegment(seg_center_x, seg_center_y);
+  if (seg == null) return 0;
+  var result = 0;
+  for (var point of seg.points) {
+    if (point.tower != null && point.tower.player == player_id) {
+      result += point.tower.height;
+    }
+  }
+  return result;
+}

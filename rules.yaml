@@ -15,13 +15,13 @@ schema:
       type: object
       properties:
         segments:
-          # TODO(rjh): specify what a segment is in more detail.
+          # TODO(rjhacks): specify what a segment is in more detail.
           type: object
         towers:
-          # TODO(rjh): specify what a tower is in more detail.
+          # TODO(rjhacks): specify what a tower is in more detail.
           type: object
         dead_points:
-          # TODO(rjh): specify what a dead point is in more detail.
+          # TODO(rjhacks): specify what a dead point is in more detail.
           type: object
       required: [segments]
       additionalProperties: false
@@ -30,6 +30,9 @@ schema:
       properties:
         name:
           type: string
+        home_segment:
+          # TODO(rjhacks): specify what a segment is in more detail.
+          type: object
       required: [name]
       additionalProperties: false
 

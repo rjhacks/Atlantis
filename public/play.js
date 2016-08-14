@@ -9,23 +9,7 @@ var b_topple;
 var b_reset;
 var t_status;
 
-function play_mouseClicked(e) {
-  if (player_id != null && player_id != turn_player) {
-    // It's a different player's turn. Do nothing.
-    return;
-  }
-
-  // We need to first reset the board to its base-position, since tentative moves
-  // may have been displayed.
-  unpackBoard();
-  clearHighlights();
-  play_fromPoint = play_fromPoint != null ? getPoint(play_fromPoint.pos.x, play_fromPoint.pos.y) : null;
-
-  var posx = getMouseX(e);
-  var posy = getMouseY(e); 
-  var point = GetPointAt(new Position(posx, posy));
-  if (point == null) return;  // Mis-click. Do nothing.
-
+function play_classic_mouseClicked(point) {
   // First click: just set the point we're moving from.
   if (play_fromPoint == null) {
     if (point.tower == null) return;  // Invalid first click; point doesn't have a tower.
@@ -41,19 +25,79 @@ function play_mouseClicked(e) {
     serializeBoard();
     enableBigButton(b_reset, "bad");
   }
-  play_fromPoint = null; 
+  play_fromPoint = null;
   play_toPoint = null;
-
   redrawBoard();
 }
 
-function play_mouseMoved(e) {
+var buffered_blocks_to_place = -1;
+function play_american_numBlocksToPlace() {
+  if (buffered_blocks_to_place >= 0) return buffered_blocks_to_place;
+  var allowed_block_count = 7 + turn_player;
+  var already_placed = CountBlocksForPlayer(game.players[turn_player].home_segment.center_x,
+                                            game.players[turn_player].home_segment.center_y,
+                                            turn_player);
+  buffered_blocks_to_place = allowed_block_count - already_placed;
+  return buffered_blocks_to_place;
+}
+
+function play_american_mouseClicked(point, e) {
+  if (game.turn.turn_number > turn_player) {
+    // After the first turn the american rules are the same as the classic rules.
+    play_classic_mouseClicked(point);
+    return;
+  }
+
+  // In the first turn, the american rules allow players to freely place N blocks.
+  if (play_american_numBlocksToPlace() <= 0) {
+    // The player isn't allowed to do anything except click "done" or "reset".
+    return;
+  }
+
+  // The target point must be part of the player's home segment.
+  if (point.segment.center_x != game.players[turn_player].home_segment.center_x ||
+      point.segment.center_y != game.players[turn_player].home_segment.center_y) {
+    return;
+  }
+  AddBlocksToTower(point, turn_player, 1);
+  serializeBoard();
+  buffered_blocks_to_place = -1;
+  play_BoardChanged();
+  enableBigButton(b_reset, "bad");
+  redrawBoard();
+}
+
+function play_mouseClicked(e) {
+  if (player_id != null && player_id != turn_player) {
+    // It's a different player's turn. Do nothing.
+    return;
+  }
+
+  // We need to first reset the board to its base-position, since tentative moves
+  // may have been displayed.
+  unpackBoard();
+  clearHighlights();
+  play_fromPoint = play_fromPoint != null ? getPoint(play_fromPoint.pos.x, play_fromPoint.pos.y) : null;
+
+  var posx = getMouseX(e);
+  var posy = getMouseY(e);
+  var point = GetPointAt(new Position(posx, posy));
+  if (point == null) return;  // Mis-click. Do nothing.
+
+  if (game.rules_version == "classic" ) {
+    play_classic_mouseClicked(point);
+  } else if (game.rules_version == "american") {
+    play_american_mouseClicked(point, e);
+  }
+}
+
+function play_classic_mouseMoved(e) {
   if (play_fromPoint == null) return;
 
   var posx = getMouseX(e);
-  var posy = getMouseY(e); 
-  if (play_toPoint != null 
-      && play_toPoint.pos.x == posx 
+  var posy = getMouseY(e);
+  if (play_toPoint != null
+      && play_toPoint.pos.x == posx
       && play_toPoint.pos.y == posy) return;  // Already showed this move.
 
   var point = GetPointAt(new Position(posx, posy));
@@ -67,8 +111,59 @@ function play_mouseMoved(e) {
   // Simulate what would happen if the second click were to fall here.
   play_fromPoint.highlight = true;
   ApplyMove(play_fromPoint.pos, point.pos, true /* tentative */);
-
   redrawBoard();
+}
+
+function play_american_mouseMoved(e) {
+  if (game.turn.turn_number > turn_player) {
+    // After the first turn the american rules are the same as the classic rules.
+    play_classic_mouseMoved(e);
+    return;
+  }
+  var posx = getMouseX(e);
+  var posy = getMouseY(e);
+  if (play_toPoint != null
+      && play_toPoint.pos.x == posx
+      && play_toPoint.pos.y == posy) return;  // Already showed this move.
+
+  // Reset the board to its base-position, so we can show changes relative to that.
+  unpackBoard();
+  clearHighlights();
+
+  var point = GetPointAt(new Position(posx, posy));
+  if (point == null) return;
+
+  // In the first turn, the american rules allow players to freely place N blocks.
+  if (play_american_numBlocksToPlace() <= 0) {
+     // The player isn't allowed to do anything except click "done" or "reset".
+    return;
+  }
+
+  // The target point must be part of the player's home segment.
+  if (point.segment.center_x != game.players[turn_player].home_segment.center_x ||
+      point.segment.center_y != game.players[turn_player].home_segment.center_y) {
+    return;
+  }
+
+  // The point is valid.
+  play_toPoint = point;
+
+  // Simulate what would happen if the second click were to fall here.
+  play_toPoint.highlight = true;
+  AddBlocksToTower(point, turn_player, 1);
+  redrawBoard();
+}
+
+function play_mouseMoved(e) {
+  if (player_id != null && player_id != turn_player) {
+    // It's a different player's turn. Do nothing.
+    return;
+  }
+  if (game.rules_version == "classic") {
+    play_classic_mouseMoved(e);
+  } else if (game.rules_version == "american") {
+    play_american_mouseMoved(e);
+  }
 }
 
 function play_BoardChanged() {
@@ -76,9 +171,10 @@ function play_BoardChanged() {
   turn_player = game.turn.turn_number % game.players.length;
   var is_move_phase = game.turn.board_number == 0;
   player_name = game.players[turn_player].name;
-  var color_msg = "(playing <font color=\"" + colors[turn_player] + "\">" 
+  var color_msg = "(playing <font color=\"" + colors[turn_player] + "\">"
                   + colors[turn_player] + "</font>).";
-  var move_msg = "It's " + player_name + "'s turn " + color_msg;
+  var move_msg1 = "It's " + player_name + "'s turn " + color_msg;
+  var move_msg2 = "";
   var topple_msg = player_name + " is toppling.";
   if (player_id != null && player_id != turn_player) {
     // It's a different player's turn.
@@ -87,6 +183,7 @@ function play_BoardChanged() {
     disableBigButton(b_reset);
   } else {
     // It's our turn, either on a shared screen or not.
+    move_msg2 = "<br/>Press \"Finish move\" when you're done.";
     if (is_move_phase) {
       enableBigButton(b_move, "good");
       disableBigButton(b_topple);
@@ -98,9 +195,24 @@ function play_BoardChanged() {
     }
     if (player_id != null) {
       // This screen has one player. Address them as "you".
-      move_msg = "It's your turn to move " + color_msg + "<br/>Press \"Finish move\" when you're done.";
+      move_msg1 = "It's your turn to move " + color_msg;
       topple_msg = "You're toppling. Press \"Topple / Grow\".";
     }
+  }
+
+  // If this is the first move of an american-style game, also count the number of blocks still to move.
+  buffered_blocks_to_place = -1;
+  if (game.rules_version == "american" && game.turn.turn_number <= turn_player) {
+    var block_remaining_count = play_american_numBlocksToPlace();
+    if (block_remaining_count > 1) {
+      move_msg1 = move_msg1 + " Place " + block_remaining_count + " more blocks.";
+    } else if (block_remaining_count == 1) {
+      move_msg1 = move_msg1 + " Place 1 more block.";
+    } else {
+      // The player just needs to press finish. The game already tells them that.
+    }
+  } else {
+    highlightHomeSegments = false;
   }
 
   // Determine which navigation buttons should be enabled. Start by assuming all are enabled.
@@ -121,6 +233,7 @@ function play_BoardChanged() {
     disableBigButton(b_reset);
     historical_msg = "Looking back at turn " + game.turn.turn_number +
                      ", board " + game.turn.board_number + " -- ";
+    move_msg2 = "";
   }
   if (game.turn.turn_number == 0 && game.turn.board_number == 0) {
     // We're looking at the first board in the game. Backwards buttons should be disabled.
@@ -129,23 +242,26 @@ function play_BoardChanged() {
   }
 
   if (is_move_phase) {
-    t_status.innerHTML = historical_msg + move_msg;
+    t_status.innerHTML = historical_msg + move_msg1 + move_msg2;
   } else {
     t_status.innerHTML = historical_msg + topple_msg;
   }
 }
 
 function play_Begin() {
-  atlantis.onclick = play_mouseClicked; 
+  atlantis.onclick = play_mouseClicked;
   atlantis.onmousemove = play_mouseMoved;
   onBoardChange(play_BoardChanged);
 }
 
 function play_FinishMove() {
-  // Perform the move-step, and progress to play_ToppleOrGrow iff 
+  // Perform the move-step, and progress to play_ToppleOrGrow iff
   // there is something to do there. Have the "Finish move" button
   // disabled for that period.
   disableBigButton(b_move);  // To prevent double-click.
+  if (game.rules_version == "american") {
+    american_initialBlocksPlaced = 0;
+  }
   play_nextStep(false, play_ToppleOrGrow);
 }
 
@@ -175,7 +291,7 @@ function play_nextStep(have_grown, readyForNextStep) {
     // current state, and wait for the player to want to take the next step.
     CommitBoard(readyForNextStep);
     return;
-  } 
+  }
   // End of turn. We won't call readyForNextStep().
   CommitTurn();
 }

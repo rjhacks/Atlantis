@@ -35,14 +35,14 @@ function setup_Begin() {
     if (direction == segmentBelow) direction = segmentRightDown;
     if (direction == segmentAbove) direction = segmentRightUp;
   }
-  atlantis.onclick = setup_segmentSelectionMouseClicked; 
+  atlantis.onclick = setup_segmentSelectionMouseClicked;
   redrawBoard();
   t_status.innerHTML = "Please click the segments you want in your board.";
 }
 
 function setup_segmentSelectionMouseClicked(e) {
   var posx = getMouseX(e);
-  var posy = getMouseY(e);  
+  var posy = getMouseY(e);
   var seg = GetSegmentAt(new Position(posx, posy));
   seg.highlight = seg.highlight ? false : true;
   num_segments_selected += seg.highlight ? 1 : -1;
@@ -56,7 +56,7 @@ function setup_segmentSelectionMouseClicked(e) {
 
 function setup_SegmentsSelected() {
   disableBigButton(b_ready);
-  
+
   // Remove the segments we haven't picked.
   var tmpSegments = allSegments;
   clearState();  // Wipes allSegments and its friends.
@@ -69,12 +69,13 @@ function setup_SegmentsSelected() {
   b_ready.onclick = setup_PlayerPositionsChosen;
   offsetX = 0;
   offsetY = 0;
+  console.log("Setting up game with " + game.rules_version + " rules");
   redrawBoard();
 }
 
 function setup_playerPositionMouseClicked(e) {
   var posx = getMouseX(e);
-  var posy = getMouseY(e);  
+  var posy = getMouseY(e);
   var seg = GetSegmentAt(new Position(posx, posy));
   if (seg.highlight) {
     players_selected[seg.highlightPlayer] = false;
@@ -112,13 +113,6 @@ function setup_PlayerPositionsChosen() {
   disableBigButton(b_ready);
   atlantis.style.display = "none";
 
-  // Fill the segments with the appropriate towers.
-  for (var point of allPoints.values()) {
-    if (point.segment.highlight) {
-      point.tower = {player: point.segment.highlightPlayer, height: 1, is_growing_point: false};
-    }
-  }
-
   var inputs = "<center><table>";
   for (var i = 0; i < num_players_selected; i++) {
     var color = colors[i];
@@ -144,12 +138,27 @@ function setup_NameChanged() {
     }
     if (i < game.players.length) {
       game.players[i].name = name_box.value;
-    } else { 
+    } else {
       game.players.push({name: name_box.value});
     }
   }
-  // All the names are set!
-  game.rules_version = "classic";
+
+  // All the names are set! Pre-populate the board as far as appropriate.
+  for (var seg of allSegments.values()) {
+    if (seg.highlight) {
+      game.players[seg.highlightPlayer].home_segment =
+          {center_x: seg.center_x, center_y: seg.center_y};
+    }
+  }
+  if (game.rules_version == "classic") {
+    // Fill the segments with the appropriate towers.
+    for (var point of allPoints.values()) {
+      if (point.segment.highlight) {
+        point.tower = {player: point.segment.highlightPlayer, height: 1, is_growing_point: false};
+      }
+    }
+  }
+
   enableBigButton(b_ready, "good");
 }
 
@@ -162,10 +171,10 @@ function setup_NamesChosen() {
 
 function setup_GameCreated() {
   var linkstr = "Game created! Yay! Send these links to your friends:<br/><center><table>";
-  var base_url = location.href + "?game=" + game_id;
+  var base_url = location.href.split('?')[0] + "?game=" + game_id;
   for (var i = 0; i < num_players_selected; i++) {
     var url = base_url + "&player=" + i;
-    linkstr += "<tr><td style=\"text-align:right; padding:5px\"><a href=\"" + url + "\" target=\"_blank\">" 
+    linkstr += "<tr><td style=\"text-align:right; padding:5px\"><a href=\"" + url + "\" target=\"_blank\">"
                + game.players[i].name + "</a>:</td>"
                + "<td><input type=\"text\" disabled=\"true\" size=" + url.length + " value=\"" + url + "\">"
                + "</td></tr>";

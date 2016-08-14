@@ -13,6 +13,7 @@ var coreColor = "white";
 var colors = ["red", "blue", "green", "orange", "yellow", "pink"];
 var lightColors = ["#FF6666", "#6666FF", "#33CC33", "#FFCC00", "GoldenRod", "HotPink"]
 var showCoords = true;
+var highlightHomeSegments = true;
 
 var offsetX = 0;  // Will center the hexagons.
 var offsetY = 0;
@@ -32,7 +33,12 @@ function createBoard() {
 
 function drawSegment(segment) {
   var color = segment.highlightPlayer !== undefined ? colors[segment.highlightPlayer] : defaultColor;
-  drawHexagon(segment.center_x, segment.center_y, segment.highlight, color);
+  var outlineColor = color;
+  if (game.rules_version == "american" && highlightHomeSegments) {
+    outlineColor = segment.home_player !== undefined ? colors[segment.home_player] : color;
+  }
+  drawHexagon(segment.center_x, segment.center_y, segment.highlight || outlineColor != defaultColor,
+              outlineColor);
   for (point of segment.points) {
     drawPoint(point, segment.highlight, color);
   }
@@ -44,7 +50,7 @@ function drawSegment(segment) {
 function screenCoordinates(point_x, point_y) {
   // To get to a point, we start at 0,0 (which is assumed to be the origin of
   // the current context), and walk down two lines:
-  // - First, we walk down the X-line. That means walking 'point_x' steps of 
+  // - First, we walk down the X-line. That means walking 'point_x' steps of
   //   'pointDist' pixels along a line that's angled upwards by 'pointRotation'
   //   degrees relative to horizontal.
   // - Next, we walk down the Y-line. That means walking 'point_y' steps of
@@ -104,7 +110,7 @@ function drawPoint(point, highlight, color) {
   var is_dead = point.is_dead;
   var player = point.tower != null ? point.tower.player : -1;
   highlight = highlight || point.highlight;
-	
+
 	// Determine the center of the point.
   screen_pos = screenCoordinates(point.pos.x, point.pos.y);
 	ctx.save();
@@ -143,7 +149,7 @@ function drawPoint(point, highlight, color) {
 			}
 			ctx.rotate(Math.PI/3)
 		}
-		
+
 		if (is_growing_point || is_dead) {
 			// draw the "core"
 			var radius = is_growing_point ? pointGrowCoreRadius : pointDeadCoreRadius;
@@ -156,7 +162,7 @@ function drawPoint(point, highlight, color) {
 			ctx.fill();
 		}
 	}
-	
+
   if (showCoords) {
     ctx.strokeStyle = defaultColor;
     ctx.fillStyle = defaultColor;
@@ -198,6 +204,8 @@ function redrawBoard() {
     for (segment of allSegments.values()) {
       drawSegment(segment);
     }
+  } else {
+    alert("Sorry, your browser doesn't seem to support HTML5. Wait, really? :o");
   }
 }
 

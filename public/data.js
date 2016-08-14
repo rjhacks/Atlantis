@@ -119,6 +119,10 @@ function clearState() {
 }
 
 function unpackBoard() {
+  if (board.segments === undefined || board.segments == null) {
+    // Board isn't loaded yet.
+    return;
+  }
   for (segment of board.segments) {
     if (getSegment(segment.x, segment.y) === null) {
       // Does setSegment() itself.
@@ -147,6 +151,12 @@ function unpackBoard() {
       var pos = dead_point.position;
       getPoint(pos.x, pos.y).is_dead = true;
     }
+  }
+  for (var i = 0; i < game.players.length; i++) {
+    if (game.players[i].home_segment === undefined) continue;
+    var home_seg = getSegment(game.players[i].home_segment.center_x,
+                              game.players[i].home_segment.center_y);
+    home_seg.home_player = i;
   }
 }
 

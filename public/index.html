@@ -104,6 +104,13 @@
       if (showCoords == null) {
         showCoords = false;
       }
+      game.rules_version = QueryString.rules_version;
+      if (game.rules_version == null) {
+        game.rules_version = "american";
+      }
+      if (game.rules_version != "classic" && game.rules_version != "american") {
+        alert("Unknown rules version: " + game.rules_version);
+      }
       b_ready = document.getElementById("readyButton");
       b_move = document.getElementById("finishButton");
       b_topple = document.getElementById("toppleButton");
