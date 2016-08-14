@@ -52,3 +52,28 @@ function PlayNotificationSound() {
   var sound = document.getElementById("sound1");
   sound.play();
 }
+
+var blinkid = 0;
+var blinkon = false;
+var blinkmsg = true;
+function SetBlinkTitle(on) {
+	if (on == blinkon) return;  // No change.
+	blinkon = on;
+
+	blinkmsg = on;
+	doBlinkTitle();
+	if (on) {
+		blinkid = setInterval("doBlinkTitle()", 1000);  // Call back every second.
+	} else {
+		clearInterval(blinkid)
+	}
+}
+
+function doBlinkTitle() {
+	if (blinkmsg) {
+		document.title = "Your turn!";
+	} else {
+		document.title = "Atlantis";
+	}
+	blinkmsg = !blinkmsg;
+}

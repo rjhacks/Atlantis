@@ -155,6 +155,7 @@ function play_american_mouseMoved(e) {
 }
 
 function play_mouseMoved(e) {
+  SetBlinkTitle(false);
   if (player_id != null && player_id != turn_player) {
     // It's a different player's turn. Do nothing.
     return;
@@ -215,6 +216,7 @@ function play_BoardChanged() {
   if (player_id == turn_player && game.turn.board_number == 0) {
     // Users are playing on different screens. Let the user know that it became their turn.
     PlayNotificationSound();
+    SetBlinkTitle(true);
   }
 }
 
