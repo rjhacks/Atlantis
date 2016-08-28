@@ -60,6 +60,7 @@ function play_american_mouseClicked(point, e) {
     return;
   }
   AddBlocksToTower(point, turn_player, 1, false);
+  point.tower.num_moved_blocks = point.tower.height;
   serializeBoard();
   buffered_blocks_to_place = -1;
   play_UpdateMessage();
