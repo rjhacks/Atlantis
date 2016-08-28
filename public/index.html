@@ -100,10 +100,8 @@
     function main() {
       game_id = QueryString.game;
       player_id = QueryString.player;
-      showCoords = QueryString.showCoords;
-      if (showCoords == null) {
-        showCoords = false;
-      }
+      showCoords = QueryString.showCoords === "true";
+      showGuidance = QueryString.showGuidance !== "false";
       game.rules_version = QueryString.rules_version;
       if (game.rules_version == null) {
         game.rules_version = "american";

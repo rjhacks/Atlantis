@@ -34,9 +34,9 @@ var buffered_blocks_to_place = -1;
 function play_american_numBlocksToPlace() {
   if (buffered_blocks_to_place >= 0) return buffered_blocks_to_place;
   var allowed_block_count = 7 + turn_player;
-  var already_placed = CountBlocksForPlayer(game.players[turn_player].home_segment.center_x,
-                                            game.players[turn_player].home_segment.center_y,
-                                            turn_player);
+  var already_placed = CountPlacedBlocksForPlayer(game.players[turn_player].home_segment.center_x,
+                                                  game.players[turn_player].home_segment.center_y,
+                                                  turn_player);
   buffered_blocks_to_place = allowed_block_count - already_placed;
   return buffered_blocks_to_place;
 }
@@ -59,7 +59,7 @@ function play_american_mouseClicked(point, e) {
       point.segment.center_y != game.players[turn_player].home_segment.center_y) {
     return;
   }
-  AddBlocksToTower(point, turn_player, 1);
+  AddBlocksToTower(point, turn_player, 1, false);
   serializeBoard();
   buffered_blocks_to_place = -1;
   play_UpdateMessage();
@@ -142,6 +142,7 @@ function play_american_mouseMoved(e) {
   // The target point must be part of the player's home segment.
   if (point.segment.center_x != game.players[turn_player].home_segment.center_x ||
       point.segment.center_y != game.players[turn_player].home_segment.center_y) {
+    redrawBoard();
     return;
   }
 
@@ -150,7 +151,7 @@ function play_american_mouseMoved(e) {
 
   // Simulate what would happen if the second click were to fall here.
   play_toPoint.highlight = true;
-  AddBlocksToTower(point, turn_player, 1);
+  AddBlocksToTower(point, turn_player, 1, true);
   redrawBoard();
 }
 
@@ -223,7 +224,7 @@ function play_BoardChanged() {
 function play_UpdateMessage() {
   var is_move_phase = game.turn.board_number == 0;
   var color_msg = "(playing <font color=\"" + colors[turn_player] + "\">"
-                  + colors[turn_player] + "</font>).";
+                  + colorNames[turn_player] + "</font>).";
   var move_msg1 = "It's " + player_name + "'s turn " + color_msg;
   var move_msg2 = "";
   var topple_msg = player_name + " is toppling.";

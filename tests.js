@@ -48,6 +48,13 @@ QUnit.test("Segment construction", function(assert) {
     assert.deepEqual(point.is_dead, false);
     assert.equal(point.segment, seg1);
   });
+  var point00 = getPoint(0, 0);
+  var point01 = getPoint(0, 1);
+  var pointm1m1 = getPoint(-1, -1);
+  ComputeLivingNeighbours();
+  assert.equal(6, point00.num_living_neighbours);
+  assert.equal(3, point01.num_living_neighbours);
+  assert.equal(3, pointm1m1.num_living_neighbours);
 });
 
 
@@ -204,11 +211,43 @@ QUnit.test("DoTopple once", function(assert) {
   assertSuperset(assert, point02.tower, {player: 0, height: 2, is_growing_point: false});
 });
 
+QUnit.test("Living neighbour counts after toppling", function(assert) {
+  clear();
+  var seg1 = new Segment(0, 0);
+  var seg2 = new Segment(3, 1);
+  var point01 = getPoint(0, 1);
+  var point11 = getPoint(1, 1);
+  var point21 = getPoint(2, 1);
+  ComputeLivingNeighbours();
+  assert.equal(point01.num_living_neighbours, 3);
+  assert.equal(point11.num_living_neighbours, 4);
+  assert.equal(point21.num_living_neighbours, 5);
+
+  point01.tower = {player: 0, height: 3, is_growing_point: false};
+  DoTopple(point01);
+  ComputeLivingNeighbours();
+  assert.equal(point01.num_living_neighbours, 3);
+  assert.equal(point11.num_living_neighbours, 3);
+  assert.equal(point21.num_living_neighbours, 5);
+
+  point01.tower.height = 3;
+  DoTopple(point01);
+  ComputeLivingNeighbours();
+  assert.equal(point01.num_living_neighbours, 3);
+  assert.equal(point11.num_living_neighbours, 3);
+  assert.equal(point21.num_living_neighbours, 5);
+
+  point11.tower.height = 3;
+  DoTopple(point11);
+  ComputeLivingNeighbours();
+  assert.equal(point21.num_living_neighbours, 4);
+});
+
 QUnit.test("Every segment moves at most one tower", function(assert) {
   clear();
   var seg1 = new Segment(0, 0);
   var seg1 = new Segment(3, 1);
- 
+
   var point00 = getPoint(0, 0);
   point00.tower = {player: 0, height: 1, is_growing_point: false};
   var point01 = getPoint(0, 1);
@@ -232,7 +271,7 @@ QUnit.test("Every block moves at most once", function(assert) {
   clear();
   var seg1 = new Segment(0, 0);
   var seg1 = new Segment(3, 1);
- 
+
   var point10 = getPoint(1, 0);
   point10.tower = {player: 0, height: 1, is_growing_point: false};
   var point20 = getPoint(2, 0);
@@ -247,7 +286,7 @@ QUnit.test("A tower with blocks that have already moved can still move the unmov
   clear();
   var seg1 = new Segment(0, 0);
   var seg1 = new Segment(3, 1);
- 
+
   var point10 = getPoint(1, 0);
   point10.tower = {player: 0, height: 1, is_growing_point: false};
   var point20 = getPoint(2, 0);
@@ -263,14 +302,14 @@ QUnit.test("Unpacking a board only changes persisted info in the game state, lea
   var seg1 = new Segment(0, 0);
   var point00_1 = getPoint(0, 0);
   point00_1.tower = {player: 0, height: 1, is_growing_point: false};
-  serializeBoard(); 
+  serializeBoard();
 
   // Data items that aren't serialized (e.g. anything that isn't 'player', 'height' or 'is_growing_point' remains untouched
   // by a board-unpacking.
   point00_1.tower.highlight = true;
   point00_1.tower.some_future_key = true;
   var expected_tower = clone(point00_1.tower);
-  
+
   // Data items that are serialized are overwitten by board-unpacking.
   point00_1.tower.height = 2;
   point00_1.tower.player = 1;

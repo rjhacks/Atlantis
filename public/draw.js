@@ -8,10 +8,15 @@ var pointDeadCoreRadius = pointRadius / 4;
 var pointRotation = -10.893;  // Degrees.
 var pointDist = hexagonSide * 0.655
 
-var defaultColor = "black";
+var segmentOutlineColor = "#999999";
+var defaultColor = "#b3b3b3";
+var invalidColor = "#f2f2f2";
 var coreColor = "white";
-var colors = ["red", "blue", "green", "orange", "yellow", "pink"];
-var lightColors = ["#FF6666", "#6666FF", "#33CC33", "#FFCC00", "GoldenRod", "HotPink"]
+var deadColor = "black";
+var colorNames = ["red", "blue", "green", "orange", "pink", "teal"];
+var colors = ["#FF0000", "#0000FF", "#33CC33", "#FFCC00", "#FF00FF", "#33CCCC"];
+var lightColors = ["#FFCCCC", "#CCCCFF", "#D6F5D6", "#FFF5CC", "#FFCCFF", "#D6F5F5"];
+
 var showCoords = true;
 var highlightHomeSegments = true;
 
@@ -33,11 +38,13 @@ function createBoard() {
 
 function drawSegment(segment) {
   var color = segment.highlightPlayer !== undefined ? colors[segment.highlightPlayer] : defaultColor;
-  var outlineColor = color;
+  var outlineColor = segment.highlightPlayer !== undefined ? colors[segment.highlightPlayer] : segmentOutlineColor;
+  var highlight_this_segment = false;
   if (game.rules_version == "american" && highlightHomeSegments) {
     outlineColor = segment.home_player !== undefined ? colors[segment.home_player] : color;
+    higlight_this_segment = true;
   }
-  drawHexagon(segment.center_x, segment.center_y, segment.highlight || outlineColor != defaultColor,
+  drawHexagon(segment.center_x, segment.center_y, segment.highlight || highlight_this_segment,
               outlineColor);
   for (point of segment.points) {
     drawPoint(point, segment.highlight, color);
@@ -105,10 +112,19 @@ function drawHexagon(center_x, center_y, highlight, color) {
 }
 
 function drawPoint(point, highlight, color) {
-	var slices = point.tower != null ? point.tower.height : 0;
-	var is_growing_point = point.tower != null ? point.tower.is_growing_point : 0;
+	var slices = 0;
+  var moved_slices = 0;
+  var is_growing_point = false;
+  var player = -1;
+  if (point.tower != null) {
+    slices = point.tower.height;
+    if (point.tower.num_moved_blocks !== undefined) {
+      moved_slices = point.tower.num_moved_blocks;
+    }
+    is_growing_point = point.tower.is_growing_point;
+    player = point.tower.player;
+  }
   var is_dead = point.is_dead;
-  var player = point.tower != null ? point.tower.player : -1;
   highlight = highlight || point.highlight;
 
 	// Determine the center of the point.
@@ -120,52 +136,95 @@ function drawPoint(point, highlight, color) {
 
 	var color = (player >= 0 ? colors[player] : color);
   if (highlight) {
-    if (player >= 0) {
-      color = lightColors[player];
-    } else {
-      ctx.lineWidth = 2;
+    ctx.lineWidth = 2;
+  }
+  // For the player who's moving, show the not-yet-moved blocks in light colours.
+  if (!is_dead
+      && !is_growing_point
+      && !point.segment.moved
+      && player == turn_player
+      && (player_id == null || player == player_id)
+      && slices > moved_slices
+      && game.turn.board_number == 0) {
+    color = lightColors[player];
+  }
+
+  // By default the canvas.arc() method operates at the 3-o'clock angle. We want a "natural" 12
+  // o'clock, and so rotate the whole point anticlockwise by 90 degrees.
+  ctx.rotate(-Math.PI/2);
+
+  // First draw any guidance (inaccessible slots), so that any player-specific info always sits on
+  // top of it.
+  if (showGuidance == true && point.num_living_neighbours < 6 && !point.is_dead) {
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0, 0, pointRadius, 0, Math.PI/3 * point.num_living_neighbours, true);
+    ctx.fillStyle = invalidColor;
+    ctx.fill();
+  }
+
+  // Always draw the full outside circle.
+  ctx.strokeStyle = defaultColor;
+  ctx.beginPath();
+  //ctx.arc(0, 0, pointRadius, 0, Math.PI/3 * point.num_living_neighbours, false);
+  ctx.arc(0, 0, pointRadius, 0, Math.PI * 6, false);
+  ctx.stroke();
+
+  // Next draw player-based info (i.e., the blocks).
+  ctx.strokeStyle = colors[player];  // Lines are always in the dark color.
+  ctx.fillStyle = color;
+  if (slices != 0 || player != -1) { // Point is not empty.
+    for (var i = 0; i < 6; i++) {
+      var accessibleSlice = showGuidance == false || i < slices || i < point.num_living_neighbours || point.is_dead;
+      // Only draw the inside lines if the slice is valid.
+      if (accessibleSlice) {
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.lineTo(pointRadius, 0);
+        ctx.arc(0, 0, pointRadius, 0, Math.PI/3, false);
+        ctx.lineTo(0, 0);
+        ctx.stroke();
+        // Only fill the slice if there's a block here.
+        if (i < slices) {
+          // A block that's already moved is always in the player's dark color.
+          ctx.fillStyle = i < moved_slices ? colors[player] : color;
+          ctx.fill();
+        }
+      } else if (i == point.num_living_neighbours) {
+        // If the slice isn't valid, we may still need to draw the closing line of the last slice.
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(pointRadius, 0);
+        ctx.stroke();
+      }
+      ctx.rotate(Math.PI/3)
     }
   }
-	ctx.strokeStyle = color;
-	ctx.fillStyle = color;
 
-	if (slices == 0 && player == -1 && !is_dead) { // point is empty
-		// draw a circle
-		ctx.beginPath();
-		ctx.arc(0, 0, pointRadius, 0, Math.PI*2, true);
-		ctx.stroke();
-	} else { // point is in use
-		for (var i = 0; i < 6; i++) {
-			ctx.beginPath();
-			ctx.arc(0, 0, pointRadius, 0, Math.PI/3, false);
-			ctx.lineTo(0, 0);
-			if (i < slices) {
-				ctx.fill();
-				ctx.beginPath();
-				ctx.arc(0, 0, pointRadius, 0, Math.PI/3, false);
-				ctx.stroke();
-			} else {
-				ctx.stroke();
-			}
-			ctx.rotate(Math.PI/3)
-		}
+  if (is_growing_point || is_dead) {
+    // draw the "core"
+    ctx.fillStyle = is_growing_point ? coreColor : deadColor;
+    if (point.segment.last_death_player != -1
+        && point.pos.x == point.segment.center_x
+        && point.pos.y == point.segment.center_y) {
+      // The entire segment is dead. Show who's responsible by highlighting the
+      // center core in their colour.
+      ctx.fillStyle = colors[point.segment.last_death_player];
+    }
+    var radius = is_growing_point ? pointGrowCoreRadius : pointDeadCoreRadius;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI*2, false);
+    ctx.fill();
+    if (is_growing_point) {
+     ctx.stroke();
+    }
+  }
 
-		if (is_growing_point || is_dead) {
-			// draw the "core"
-			var radius = is_growing_point ? pointGrowCoreRadius : pointDeadCoreRadius;
-			ctx.fillStyle = is_growing_point ? coreColor : defaultColor;
-			ctx.beginPath();
-			ctx.arc(0, 0, radius, 0, Math.PI*2, false);
-			ctx.stroke();
-			ctx.beginPath();
-			ctx.arc(0, 0, radius, 0, Math.PI*2, false);
-			ctx.fill();
-		}
-	}
 
   if (showCoords) {
-    ctx.strokeStyle = defaultColor;
-    ctx.fillStyle = defaultColor;
+    ctx.rotate(Math.PI/2);
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
     ctx.fillText(point.pos.x + "," + point.pos.y, 0, 0);
   }
 

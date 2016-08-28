@@ -40,7 +40,7 @@ function reloadBoard() {
   if (game.turn.turn_number > current_turn_number) {
     current_turn_number = game.turn.turn_number;
     current_board_number = game.turn.board_number;
-  } else if (game.turn.turn_number == current_turn_number && 
+  } else if (game.turn.turn_number == current_turn_number &&
              game.turn.board_number > current_board_number) {
     current_board_number = game.turn.board_number;
   }
@@ -108,7 +108,7 @@ function listenForMove() {
   fb_game.on("value", function(gameSnapshot) {
     game = gameSnapshot.val();
     reloadBoard();
-  }, function(errorObject) { 
+  }, function(errorObject) {
     console.log("games.on failed: " + errorObject.code)
   });
 }
@@ -126,7 +126,10 @@ function unpackBoard() {
   for (segment of board.segments) {
     if (getSegment(segment.x, segment.y) === null) {
       // Does setSegment() itself.
-      new Segment(segment.x, segment.y);
+      var seg = new Segment(segment.x, segment.y);
+      if (segment.last_death_player !== undefined) {
+        seg.last_death_player = segment.last_death_player;
+      }
     }
   }
   var remainingTowerPositions = new Set();
@@ -158,6 +161,7 @@ function unpackBoard() {
                               game.players[i].home_segment.center_y);
     home_seg.home_player = i;
   }
+  ComputeLivingNeighbours();
 }
 
 function serializeBoard() {
@@ -169,6 +173,9 @@ function serializeBoard() {
     var s = {};
     s.x = segment.center_x;
     s.y = segment.center_y;
+    if (segment.last_death_player != -1) {
+      s.last_death_player = segment.last_death_player;
+    }
     board.segments.push(s);
     for (point of segment.points) {
       if (point.is_dead) {
@@ -200,7 +207,7 @@ function commitGame(onComplete) {
   fb_turns.child(board_path).set(board, function() {
     // Only update the game once the board has been written down.
     fb_game.child("turn").set(game.turn, function() {
-      writeInProgress = false; 
+      writeInProgress = false;
       if (onComplete !== undefined) onComplete();
     });
   });

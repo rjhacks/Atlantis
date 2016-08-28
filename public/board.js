@@ -53,6 +53,7 @@ function Segment(center_x, center_y) {
   this.center_y = center_y;
   this.moved = false;  // A rules-hint.
   this.points = [];
+  this.last_death_player = -1;
   var addPoint = function(x, y, segment) {
     var point = new Point(segment, x, y);
     segment.points.push(point);
@@ -60,6 +61,18 @@ function Segment(center_x, center_y) {
   addPoint(center_x, center_y, this);
   forEachNeighbour(center_x, center_y, this /* context = segment */, addPoint);
   setSegment(this);
+}
+
+function ComputeLivingNeighbours() {
+  for (var point of allPoints.values()) {
+    point.num_living_neighbours = 0;
+    forEachNeighbour(point.pos.x, point.pos.y, point, function(x, y, point) {
+      var neighbour = getPoint(x, y);
+      if (neighbour == null || neighbour.is_dead) return;
+      if (neighbour.tower != null && neighbour.tower.is_growing_point) return;
+      point.num_living_neighbours++;
+    });
+  }
 }
 
 function Position(x, y) {
@@ -79,14 +92,16 @@ function Point(segment, x, y) {
 	this.segment = segment;
   this.pos = new Position(x, y);
   this.tower = null;
+  this.num_living_neighbours = 0;
   this.is_dead = false;
   this.highlight = false;  // Purely a hint to UI. Not persisted.
+  this.blocks_annihilated_this_turn = 0;  // Hint for the first turn placement code. Not persisted.
 
   // Register this point with the global points map.
   setPoint(this);
 }
 
-function RemoveBlocksFromTower(point, num_blocks) {
+function RemoveBlocksFromTower(point, player, num_blocks, tentative) {
   if (point.tower == null) {
     if (num_blocks > 0) console.log("BUG: removing blocks from null tower");
     return;
@@ -96,25 +111,42 @@ function RemoveBlocksFromTower(point, num_blocks) {
     return;
   }
   point.tower.height -= num_blocks;
-  if (point.tower.height == 0) point.tower = null;
+  if (tentative) {
+    // Keep 0-height towers to show where steps happened, but make sure they're assigned to the
+    // player who's moving, for visual effect.
+    if (point.tower.height == 0) {
+      point.tower.player = player;
+    }
+  } else {
+    point.blocks_annihilated_this_turn += num_blocks;
+    // Clear 0-height towers.
+    if (point.tower.height == 0) point.tower = null;
+  }
 }
 
-function AddBlocksToTower(point, player_id, num_blocks) {
-  if (point.tower == null) {
+function AddBlocksToTower(point, player_id, num_blocks, tentative) {
+  if (point.tower == null || point.tower.height == 0) {
     point.tower = { height: 0, is_growing_point: false };
     point.tower.player = player_id;
   }
-  point.tower.height += num_blocks;
+  if (point.tower.player == player_id) {
+    point.tower.height += num_blocks;
+  } else {
+    // Rare: two players started side-by-side, and one player toppled onto the
+    // current player's home segment, allowing the current player to already
+    // annihilate blocks on the placement turn.
+    RemoveBlocksFromTower(point, player_id, num_blocks, tentative);
+  }
 }
 
-function MoveBlocks(fromPoint, toPoint, num_blocks) {
+function MoveBlocks(fromPoint, toPoint, num_blocks, tentative) {
   if (toPoint.tower != null && toPoint.tower.player != fromPoint.tower.player) {
     // First cancel out existing blocks.
     var num_to_remove = Math.min(toPoint.tower.height, num_blocks);
-    RemoveBlocksFromTower(toPoint, num_to_remove);
+    RemoveBlocksFromTower(toPoint, fromPoint.tower.player, num_to_remove, tentative);
     num_blocks -= num_to_remove;
   }
-  if (num_blocks > 0) AddBlocksToTower(toPoint, fromPoint.tower.player, num_blocks); 
+  if (num_blocks > 0) AddBlocksToTower(toPoint, fromPoint.tower.player, num_blocks, tentative);
   return num_blocks;
 }
 
@@ -129,7 +161,7 @@ function WillTopple(point) {
     if (neighbour.tower != null && neighbour.tower.is_growing_point) return;
     counter.neighbours++;
   });
-  
+
   return point.tower.height >= counter.neighbours;
 }
 
@@ -139,10 +171,25 @@ function DoTopple(point) {
     neighbour = getPoint(x, y);
     if (neighbour == null || neighbour.is_dead) return;
     if (neighbour.tower != null && neighbour.tower.is_growing_point) return;
-    MoveBlocks(fromPoint, neighbour, 1);
+    MoveBlocks(fromPoint, neighbour, 1, false);
   });
   if (point.tower.is_growing_point) {
     point.is_dead = true;
+    if (point.segment != null) {  // Can be null only in tests.
+      var num_dead_points_on_segment = 0;
+      var countDead = function(x, y, ignored) {
+        var p = getPoint(x, y);
+        if (p == null) return;
+        if (p.is_dead) {
+          num_dead_points_on_segment++;
+        }
+      }
+      countDead(point.segment.center_x, point.segment.center_y, null);
+      forEachNeighbour(point.segment.center_x, point.segment.center_y, null, countDead);
+      if (num_dead_points_on_segment == 7) {
+        point.segment.last_death_player = point.tower.player;
+      }
+    }
     point.tower = null;
   } else {
     point.tower.is_growing_point = true;
@@ -150,7 +197,7 @@ function DoTopple(point) {
   }
 }
 
-// Topples all points that are toppleable, but doesn't do chain reactions. Returns 
+// Topples all points that are toppleable, but doesn't do chain reactions. Returns
 // true iff at least one topple took place. To do chain reactions, keep calling
 // this method until it return false.
 function DoOneToppleRound(player) {
@@ -187,7 +234,7 @@ function GrowAll(player) {
 
 function HasGrowingPoints(player_id) {
   for (var point of allPoints.values()) {
-    if (point.tower != null && point.tower.player == player_id 
+    if (point.tower != null && point.tower.player == player_id
         && point.tower.is_growing_point) {
       return true;
     }
@@ -195,14 +242,14 @@ function HasGrowingPoints(player_id) {
   return false;
 }
 
-// Modifies the game state with the given move, if legal. If "tentative" is true, 
+// Modifies the game state with the given move, if legal. If "tentative" is true,
 // any changes to the board will be highlighted. If it is false, the move is recorded
-// as having happened, and future moves for this segment/tower will be prevented. 
+// as having happened, and future moves for this segment/tower will be prevented.
 // Returns true if a legal move was displayed, or false if the move wasn't legal.
 function ApplyMove(fromPos, toPos, tentative) {
   var fromPoint = getPoint(fromPos.x, fromPos.y);
   var toPoint = getPoint(toPos.x, toPos.y);
-  
+
   // The source segment can't have moved yet.
   if (fromPoint.segment != null && fromPoint.segment.moved) return false;
 
@@ -219,7 +266,7 @@ function ApplyMove(fromPos, toPos, tentative) {
   var yStep = posDelta.y != 0 ? (posDelta.y > 0 ? 1 : -1) : 0;
   if (posDelta.x == 0 && posDelta.y == 0) return false;
   if (posDelta.x != 0 && posDelta.y != 0 && posDelta.x != posDelta.y) return false;
-  
+
   // There must be enough blocks on the origin point to complete the desired move.
   var steps = posDelta.x != 0 ? Math.abs(posDelta.x) : Math.abs(posDelta.y);
   if (fromPoint.tower == null) return false;
@@ -247,14 +294,8 @@ function ApplyMove(fromPos, toPos, tentative) {
     var currPoint = getPoint(currPos.x, currPos.y);
     var survivingBlocks = 0;
     if (numBlocks > 0) {
-      survivingBlocks = MoveBlocks(lastPoint, currPoint, numBlocks);
-      if (tentative) {  
-        // Leave 0-height towers in place where steps happened.
-        lastPoint.tower.height -= numBlocks;
-      } else {
-        // Leave towers in their "final" state, clearing 0-height towers.
-        RemoveBlocksFromTower(lastPoint, numBlocks);
-      }
+      survivingBlocks = MoveBlocks(lastPoint, currPoint, numBlocks, tentative);
+      RemoveBlocksFromTower(lastPoint, player, numBlocks, tentative);
       numBlocks = survivingBlocks;
     }
     if (numBlocks == 0 && tentative && currPoint.tower == null) {
@@ -278,7 +319,7 @@ function ApplyMove(fromPos, toPos, tentative) {
   return true;
 }
 
-function CountBlocksForPlayer(seg_center_x, seg_center_y, player_id) {
+function CountPlacedBlocksForPlayer(seg_center_x, seg_center_y, player_id) {
   seg = getSegment(seg_center_x, seg_center_y);
   if (seg == null) return 0;
   var result = 0;
@@ -286,6 +327,7 @@ function CountBlocksForPlayer(seg_center_x, seg_center_y, player_id) {
     if (point.tower != null && point.tower.player == player_id) {
       result += point.tower.height;
     }
+    result += point.blocks_annihilated_this_turn;
   }
   return result;
 }

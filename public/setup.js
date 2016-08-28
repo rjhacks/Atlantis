@@ -115,8 +115,7 @@ function setup_PlayerPositionsChosen() {
 
   var inputs = "<center><table>";
   for (var i = 0; i < num_players_selected; i++) {
-    var color = colors[i];
-    inputs += "<tr><td>Player playing <font color=\"" + color + "\">" + color + "</font>:</td><td>"
+    inputs += "<tr><td>Player playing <font color=\"" + colors[i] + "\">" + colorNames[i] + "</font>:</td><td>"
               + "<input type=\"text\" class=\"namesInput\" id=\"namesInput_" + i + "\" size=15 "
               + "onkeyup=\"setup_NameChanged()\"></td></tr>";
   }
